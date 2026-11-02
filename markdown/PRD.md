@@ -1,0 +1,143 @@
+# Tài liệu Yêu cầu Dự án (PRD)
+
+**Tên dự án:** DevMapper — Hệ thống Tự động hóa Bản đồ Kiến trúc Mã nguồn & Ngữ cảnh AI
+**Người soạn:** Phạm Hồng Phúc
+**Ngày soạn:** 21/10/2026
+
+## Mục lục
+
+1. [Vấn đề](#1-vấn-đề)
+2. [Mục tiêu](#2-mục-tiêu)
+3. [Đối tượng người dùng](#3-đối-tượng-người-dùng)
+4. [Công cụ tương đồng](#4-công-cụ-tương-đồng)
+5. [Phạm vi tính năng](#5-phạm-vi-tính-năng)
+   - [5.1 Quét mã nguồn tĩnh qua CI & Quản lý cụm Polyrepo](#51-quét-mã-nguồn-tĩnh-qua-ci--quản-lý-cụm-polyrepo)
+   - [5.2 Bản đồ kiến trúc tương tác & So sánh phiên bản](#52-bản-đồ-kiến-trúc-tương-tác--so-sánh-phiên-bản)
+   - [5.3 Phân tích tác động & Cổng ngữ cảnh MCP cho AI Agent](#53-phân-tích-tác-động--cổng-ngữ-cảnh-mcp-cho-ai-agent)
+   - [5.4 Kiểm thử tích lũy Playwright Trace & Bảo mật Strix](#54-kiểm-thử-tích-lũy-playwright-trace--bảo-mật-strix)
+   - [5.5 Tính năng thông minh Đa mô hình AI — đề xuất khác biệt](#55-tính-năng-thông-minh-đa-mô-hình-ai--đề-xuất-khác-biệt)
+6. [User Stories tiêu biểu](#6-user-stories-tiêu-biểu)
+7. [Đề xuất công nghệ](#7-đề-xuất-công-nghệ)
+8. [Rủi ro và Giả định](#8-rủi-ro-và-giả-định)
+
+---
+
+## 1. Vấn đề
+
+**Bối cảnh hiện tại:** Hệ thống của đội ngũ phát triển bao gồm nhiều microservice, trong đó mỗi service nằm ở một kho lưu trữ riêng biệt (polyrepo) trên GitLab/GitHub. Khi số lượng service tăng lên, cả lập trình viên lẫn các AI coding agent (Claude Code, OpenAI Codex, ...) đều gặp khó khăn khi trả lời những câu hỏi cơ bản: *Service này gọi tới service nào? Ai đang subscribe vào Kafka topic này? Sửa một trường trong API này thì ảnh hưởng dây chuyền tới những repo nào?* Trong khi đó, tài liệu kiến trúc vẽ tay trên Wiki/Draw.io nhanh chóng bị lỗi thời chỉ sau vài đợt release.
+
+**Hệ quả:**
+
+- **Mù ngữ cảnh liên repo (Cross-repo blindness):** AI Agent khi chạy trong một repo đơn lẻ không biết sự tồn tại và hợp đồng giao tiếp (API/Event contract) của các repo lân cận, dễ sinh ra code gây lỗi tích hợp (breaking changes).
+- **Tốn thời gian onboarding:** Lập trình viên mới (fresher/junior) mất nhiều tuần đọc từng file cấu hình để tự hình dung luồng chạy của hệ thống.
+- **Không có nguồn sự thật duy nhất (Single Source of Truth):** Sơ đồ kiến trúc hiện tại không phản ánh đúng trạng thái thực tế của nhánh code đang chạy.
+- **Rủi ro triển khai cao:** Khó khoanh vùng bán kính ảnh hưởng (blast radius) trước khi merge Pull Request hoặc nâng cấp cấu trúc dữ liệu.
+
+**Người gặp vấn đề:** Lập trình viên mới (tra cứu luồng hệ thống), AI Coding Agent (cần ngữ cảnh đa repo để sửa code), Tech Lead/Architect (kiểm soát phụ thuộc và điểm nghẽn), DevSecOps/Admin (giám sát chất lượng kiểm thử và lỗ hổng bảo mật).
+
+**Vì sao cần phải giải quyết:** Tốc độ phát triển phần mềm bằng AI phụ thuộc trực tiếp vào độ chính xác của ngữ cảnh đầu vào; nếu không tự động hóa bản đồ kiến trúc từ mã nguồn, số lượng lỗi tích hợp liên repo sẽ tăng theo cấp số nhân.
+
+## 2. Mục tiêu
+
+- Tự động hóa 100% việc sinh bản đồ kiến trúc hệ thống trực tiếp từ mã nguồn (Static Code Analysis) và cập nhật liên tục qua pipeline CI/CD.
+- Cung cấp giao diện đồ thị tương tác trực quan giúp lập trình viên mới nắm bắt kiến trúc, luồng gọi API và luồng sự kiện Kafka nhanh chóng.
+- Cung cấp chuẩn ngữ cảnh có cấu trúc (thông qua Model Context Protocol - MCP và JSON Graph) làm đầu vào thời gian thực cho các AI Agent (Claude Code, Codex) khi phát triển hoặc sửa lỗi xuyên qua nhiều repo.
+- Tích hợp quy trình kiểm thử E2E tích lũy (Playwright Trace Viewer) và rà soát lỗ hổng bảo mật tự động (Strix) gắn liền với từng phiên bản kiến trúc.
+
+## 3. Đối tượng người dùng
+
+| Persona | Nhu cầu chính |
+|---|---|
+| Lập trình viên / Developer (Fresher) | Xem sơ đồ kết nối giữa các microservice, tra cứu nhanh API contract, Kafka topic và luồng dữ liệu mà không cần mở từng repo |
+| Tác tử AI / AI Coding Agent (Claude, Codex) | Truy vấn đồ thị phụ thuộc và hợp đồng API qua giao thức MCP để hiểu ngữ cảnh đa repo trước khi thêm tính năng hoặc sửa lỗi |
+| Kiến trúc sư / Tech Lead | Phân tích bán kính ảnh hưởng (Impact Analysis) khi thay đổi API, phát hiện phụ thuộc vòng (circular dependencies) và đánh giá kiến trúc với sự hỗ trợ của 4 mô hình AI |
+| Quản trị hệ thống / Platform Admin | Quản lý cụm repo, cấu hình Keycloak IAM, kiểm soát mạng nội bộ NetBird, theo dõi lịch sử Playwright Trace HTML và báo cáo bảo mật Strix |
+
+## 4. Công cụ tương đồng
+
+So sánh nhanh các công cụ quản lý kiến trúc và danh bạ dịch vụ phổ biến hiện nay để rút ra bài học thiết kế cho **DevMapper**:
+
+| Công cụ | Điểm mạnh nổi bật | Bài học áp dụng cho DevMapper |
+|---|---|---|
+| Spotify Backstage | Cổng thông tin IDP toàn diện, quản lý danh bạ dịch vụ (Service Catalog) và tài liệu rất mạnh | Tự động hóa việc sinh metadata từ CI thay vì bắt dev phải viết và cập nhật file `catalog-info.yaml` thủ công |
+| Kiali / Jaeger | Vẽ bản đồ topo dịch vụ (Service Mesh / Distributed Tracing) chính xác dựa trên lưu lượng runtime | Chuyển dịch việc vẽ bản đồ về giai đoạn Compile/CI time (quét mã tĩnh AST) để phát hiện lỗi phụ thuộc ngay trước khi code được chạy thật |
+| Sourcegraph | Tìm kiếm mã nguồn và tham chiếu chéo (code intelligence) cực nhanh trên nhiều repository | Trích xuất mối quan hệ cấp cao (Service $\rightarrow$ Endpoint / Topic) thành đồ thị gọn nhẹ thay vì trả về hàng nghìn dòng kết quả tìm kiếm thô |
+| Structurizr (C4) | Chuẩn hóa mô hình hóa kiến trúc phần mềm theo các tầng phóng đại (System $\rightarrow$ Container $\rightarrow$ Component) | Áp dụng tư duy phóng đại đa cấp (Drill-down) lên giao diện React Flow để bản đồ không bị rối khi số lượng microservice lớn |
+| Repomix / Context7 | Đóng gói ngữ cảnh mã nguồn và tài liệu thư viện tốc độ cao cho các mô hình ngôn ngữ lớn (LLM) | Cung cấp MCP Server chuyên biệt chỉ trả về đúng nhánh đồ thị liên quan tới task đang làm để tiết kiệm token cho AI Agent |
+
+## 5. Phạm vi tính năng
+
+Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) · **C** = Could-have (Phase 3)
+
+### 5.1 Quét mã nguồn tĩnh qua CI & Quản lý cụm Polyrepo
+
+- [x] **[M]** Đăng ký và gom nhóm các repository thuộc cùng một hệ thống (System Group)
+- [x] **[M]** Bộ công cụ CLI/Scanner chạy trên CI tự động phân tích cây cú pháp (AST) để bóc tách: REST Controllers, HTTP Clients (`FeignClient`, `RestClient`, `Axios`), gRPC và Kafka Producers/Consumers
+- [x] **[M]** Đẩy kết quả quét (AST Manifest JSON) qua sự kiện Apache Kafka về máy chủ DevMapper và lưu bản chụp gốc trên MinIO tự host
+- [x] **[S]** Tự động sửa lỗi pipeline và đóng gói lại qua GitHub Actions Self-hosted Runner kết hợp cơ chế Incremental Build khi phát hiện error/warn log
+
+### 5.2 Bản đồ kiến trúc tương tác & So sánh phiên bản
+
+- [x] **[M]** Hiển thị bản đồ topo kiến trúc dạng Node-Edge tương tác (zoom, pan, lọc theo giao thức HTTP/Kafka/DB) bằng React Flow và tự động căn chỉnh bố cục bằng ELKjs
+- [x] **[M]** Tra cứu chi tiết trên từng đỉnh (Service Node) và cạnh nối (Dependency Edge): hiển thị đường dẫn file, số dòng code gọi API và cấu trúc payload
+- [x] **[S]** So sánh kiến trúc giữa 2 phiên bản commit/tag (Architecture Diff): tô màu các kết nối mới thêm, bị xóa hoặc có nguy cơ gây lỗi tương thích ngược (breaking changes)
+- [x] **[C]** Xuất bản đồ kiến trúc ra định dạng Mermaid.js hoặc hình ảnh để đính kèm tự động vào mô tả Pull Request
+
+### 5.3 Phân tích tác động & Cổng ngữ cảnh MCP cho AI Agent
+
+- [x] **[M]** Truy vấn bán kính ảnh hưởng (Blast Radius): chọn một API endpoint hoặc Kafka topic để liệt kê toàn bộ các upstream/downstream services bị tác động qua nhiều tầng
+- [x] **[M]** Cung cấp MCP Server (Model Context Protocol) tích hợp sẵn các tool (`get_service_topology`, `analyze_breaking_change`, `get_topic_subscribers`) cho Claude Code và Codex
+- [x] **[S]** Xuất gói ngữ cảnh kiến trúc rút gọn (`ai-architecture-context.json`) theo từng phạm vi tính năng
+
+### 5.4 Kiểm thử tích lũy Playwright Trace & Bảo mật Strix
+
+- [x] **[M]** Thực thi kiểm thử E2E tích lũy bằng Playwright sau mỗi đợt cập nhật codebase (cộng dồn toàn bộ test case cũ và mới)
+- [x] **[M]** Đóng gói báo cáo HTML kèm dữ liệu Playwright Trace Viewer theo từng version vào thư mục `testing/versions/` và MinIO, cho phép xem lại trực tiếp trên giao diện web
+- [x] **[M]** Quét lỗ hổng bảo mật và điểm yếu hệ thống tự động bằng Strix sau mỗi lần thay đổi code, lưu báo cáo và theo dõi trạng thái vá lỗi
+
+### 5.5 Tính năng thông minh Đa mô hình AI — đề xuất khác biệt
+
+- [x] **[S]** Trợ lý phân tích kiến trúc hỗ trợ chuyển đổi linh hoạt giữa 4 mô hình AI: **Claude, ChatGPT, Gemini, và Grok**
+- [x] **[S]** Tự động sinh giải pháp tái cấu trúc (refactoring) khi phát hiện phụ thuộc vòng (circular dependency) hoặc nghẽn cổ chai giữa các microservice
+
+## 6. User Stories tiêu biểu
+
+- Là **lập trình viên mới (fresher)**, tôi muốn nhìn thấy sơ đồ tổng thể các microservice và luồng Kafka topic được cập nhật theo đúng nhánh `main` hiện tại để hiểu hệ thống ngay trong ngày đầu nhận việc.
+- Là **kỹ sư phát triển sử dụng AI Agent (Claude Code / Codex)**, tôi muốn AI tự động truy vấn MCP Server của DevMapper để biết rõ những repo nào đang gọi API tôi sắp sửa, nhằm tránh làm hỏng các service khác.
+- Là **Tech Lead**, tôi muốn đối chiếu sự thay đổi kiến trúc giữa các phiên bản và nhờ các mô hình AI (Claude/ChatGPT/Gemini/Grok) đánh giá rủi ro trước khi phê duyệt thiết kế.
+- Là **Quản trị viên hệ thống (Platform Admin)**, tôi muốn xem lại bản preview HTML từ Trace Viewer của Playwright và báo cáo lỗ hổng Strix của từng bản build để đảm bảo hệ thống luôn an toàn, ổn định.
+
+## 7. Đề xuất công nghệ
+
+| Lớp | Công nghệ | Lý do / Ghi chú |
+|---|---|---|
+| Frontend | React + Vite | SPA nội bộ tốc độ cao, kết hợp TypeScript đảm bảo an toàn kiểu dữ liệu khi xử lý cấu trúc đồ thị phức tạp |
+| Đồ thị kiến trúc | React Flow (`@xyflow/react`) + ELKjs | Vẽ bản đồ kiến trúc node-edge tương tác đa tầng; kết hợp thuật toán ELKjs để tự động tính toán tọa độ bố cục đồ thị không bị chồng chéo |
+| Biểu đồ thống kê | Recharts + Mermaid.js | Recharts vẽ biểu đồ thống kê sức khỏe kiến trúc, số lượng test case tích lũy và lỗ hổng Strix; Mermaid.js xuất sơ đồ văn bản cho tài liệu Markdown |
+| Form & State | React Hook Form + Zustand | Quản lý trạng thái bộ lọc đồ thị (theo nhánh, giao thức, mức độ rủi ro) và các biểu mẫu cấu hình hệ thống |
+| Styling | TailwindCSS + ShadCN | Thiết kế giao diện hiện đại, nhẹ, hỗ trợ TypeScript thuần và tuân thủ quy tắc đóng gói component dùng chung tại `client/src/lib/` |
+| Runtime & Linter | Bun.js + Dependency-Cruiser | Dùng Bun làm package manager và trình chạy script tốc độ cao; dùng Dependency-Cruiser để khóa cứng kiến trúc phân tầng đơn bước ở client |
+| Cache trạng thái UI | TanStack Query | Tự động hóa việc tải dữ liệu đồ thị, lưu bộ nhớ đệm phía client và đồng bộ trạng thái bản đồ từ API máy chủ |
+| Kiểm thử E2E | Playwright (kèm Trace Viewer) | Chạy kiểm thử E2E tích lũy tăng dần trên trình duyệt thật sau mỗi thay đổi code; trích xuất gói HTML Trace Viewer lưu theo từng version trong thư mục `testing/` |
+| Bảo mật & Rà soát | Strix | Tự động kiểm thử bảo mật và rà soát điểm yếu kiến trúc/mã nguồn sau mỗi đợt cập nhật để phát hiện và vá lỗi kịp thời |
+| Backend | Spring Boot (Microservices) | Tách thành 4 Core Microservices (`scanner-service`, `topology-service`, `ai-mcp-service`, `quality-gov-service`) và 1 API Gateway, giúp tối ưu cô lập lỗi và quản lý bởi đội ngũ AI Agent |
+| Phân tích mã tĩnh | Tree-sitter + OpenAPI/AsyncAPI Parser | Phân tích cây cú pháp trừu tượng (AST) đa ngôn ngữ và đọc các file đặc tả để tự động phát hiện điểm gọi API/Kafka từ source code |
+| Bảo mật tầng API | Spring Security | Xác thực JWT do Keycloak phát hành cho mọi request; kiểm soát phân quyền RBAC chặt chẽ ngay tại tầng API của API Gateway và các microservices |
+| Build tool & CI/CD | Gradle + GitHub Actions (tự host trên PC) | Hỗ trợ Incremental Build (biên dịch gia tăng) kết hợp Runner tự host, giúp AI Agent tự động vá lỗi (auto-fix) và build lại cực nhanh |
+| Database | PostgreSQL (4 Schemas riêng biệt) | Tự host 1 container PostgreSQL trên PC nhưng chia 4 schema (`scanner_db`, `topology_db`, `ai_db`, `gov_db`) đảm bảo quy tắc Database-per-Service của Microservices |
+| ORM & Migration | MyBatis + Flyway | Kiểm soát tối ưu các câu truy vấn SQL đệ quy phức tạp (`WITH RECURSIVE`) trên đồ thị thông qua MyBatis; quản lý migration độc lập cho từng schema |
+| Cache hệ thống | Redis (tự host trên PC) | Lưu bộ nhớ đệm cho đồ thị tổng (`global-graph`), kết quả truy vấn MCP và quản lý giới hạn tần suất gọi API (Rate Limiting) |
+| Luồng sự kiện | Apache Kafka KRaft (tự host trên PC) | Tiếp nhận bất đồng bộ các sự kiện hoàn tất quét mã nguồn từ CI pipeline và kết nối giao tiếp chéo giữa các microservices nội bộ |
+| IAM / SSO | Keycloak (tự host trên PC) | Quản lý định danh tập trung, Realm, phân quyền người dùng và phát hành token chuẩn OIDC/OAuth2 cho cả Web App lẫn VPN |
+| VPN nội bộ | NetBird (tự host trên VPS riêng) | Thiết lập mạng lưới WireGuard Zero-Trust kết nối từ VPS riêng về máy chủ PC; bảo vệ toàn bộ cổng dịch vụ nội bộ không lộ ra internet công khai |
+| Lưu trữ đối tượng | MinIO (tự host trên PC) | Lưu trữ qua giao thức S3 các file kết quả quét AST JSON, báo cáo chi tiết của Strix và toàn bộ gói tài nguyên HTML Trace Viewer của Playwright |
+| Email / SMTP | Brevo | Kết nối với Keycloak và Backend qua SMTP để gửi email xác thực tài khoản và cảnh báo khi phát hiện thay đổi kiến trúc gây lỗi |
+| Đa mô hình AI & MCP | Claude, ChatGPT, Gemini, Grok + MCP SDK | Kết nối cả 4 nền tảng AI lớn phục vụ phân tích tác động kiến trúc; cung cấp MCP Server chuẩn hóa ngữ cảnh cho AI Coding Agent |
+| Reverse Proxy / TLS | Traefik (tự host trên VPS riêng) | Định tuyến theo tên miền nội bộ, tự động cấp chứng chỉ Let's Encrypt qua DNS-01 và chỉ lắng nghe trên giao diện mạng riêng của NetBird |
+
+## 8. Rủi ro và Giả định
+
+- **Giả định:** Các microservice trong hệ thống tuân thủ các mẫu giao tiếp tiêu chuẩn (REST/HTTP, gRPC, Kafka) hoặc khai báo biến môi trường nhất quán trong cấu hình repo.
+- **Rủi ro tài nguyên phần cứng trên PC:** Việc tự host đồng thời PostgreSQL, Redis, Kafka, Keycloak, MinIO và chạy Playwright trên cùng một PC có thể gây quá tải RAM → thiết lập giới hạn bộ nhớ (`mem_limit`) chặt chẽ cho từng container, dùng Kafka ở chế độ KRaft và chia nhỏ hệ thống thành Microservices để tối ưu.
+- **Rủi ro định tuyến đường truyền động (Dynamic URL resolution):** Một số lệnh gọi HTTP ghép chuỗi động lúc runtime có thể khó bóc tách 100% bằng phân tích tĩnh → cần kết hợp đọc cả file cấu hình (`application.yml`, `.env`) để nội suy đích đến.
+- **Rủi ro bảo mật mã nguồn:** Dữ liệu cấu trúc mã nguồn và báo cáo lỗ hổng từ Strix rất nhạy cảm → bắt buộc cô lập hoàn toàn sau lớp mạng VPN NetBird và kiểm soát quyền qua Keycloak.

@@ -1,0 +1,131 @@
+# Đặc tả Yêu cầu Phần mềm (SRS)
+
+**Tên dự án:** DevMapper — Hệ thống Tự động hóa Bản đồ Kiến trúc Mã nguồn & Ngữ cảnh AI
+**Người soạn:** Phạm Hồng Phúc
+**Ngày soạn:** 21/10/2026
+
+> Tài liệu này đặc tả chi tiết các yêu cầu chức năng và phi chức năng cho nền tảng **DevMapper**, làm căn cứ kỹ thuật xuyên suốt cho đội ngũ phát triển và hệ thống đa tác tử AI (điều phối qua skill `Harness` với `Sol Gốc` và `Luna`).
+
+## Mục lục
+
+1. [Giới thiệu](#1-giới-thiệu)
+   - [1.1 Mục đích](#11-mục-đích)
+   - [1.2 Phạm vi](#12-phạm-vi)
+   - [1.3 Đối tượng sử dụng](#13-đối-tượng-sử-dụng)
+2. [Mô tả tổng quan](#2-mô-tả-tổng-quan)
+   - [2.1 Bối cảnh sản phẩm](#21-bối-cảnh-sản-phẩm)
+   - [2.2 Giả định và ràng buộc](#22-giả-định-và-ràng-buộc)
+3. [Yêu cầu chức năng](#3-yêu-cầu-chức-năng)
+   - [FR-1: Quản lý cụm hệ thống (System Group) và đồng bộ Polyrepo](#fr-1-quản-lý-cụm-hệ-thống-system-group-và-đồng-bộ-polyrepo)
+   - [FR-2: Phân tích mã nguồn tĩnh và xây dựng đồ thị phụ thuộc](#fr-2-phân-tích-mã-nguồn-tĩnh-và-xây-dựng-đồ-thị-phụ-thuộc)
+   - [FR-3: Bản đồ tương tác, phân tích tác động và cổng ngữ cảnh MCP](#fr-3-bản-đồ-tương-tác-phân-tích-tác-động-và-cổng-ngữ-cảnh-mcp)
+   - [FR-4: Quản lý kiểm thử tích lũy Playwright và báo cáo bảo mật Strix](#fr-4-quản-lý-kiểm-thử-tích-lũy-playwright-và-báo-cáo-bảo-mật-strix)
+   - [FR-5: Xác thực tập trung Keycloak và phân quyền RBAC](#fr-5-xác-thực-tập-trung-keycloak-và-phân-quyền-rbac)
+   - [FR-6: Nhật ký Audit và điều phối sự kiện Kafka](#fr-6-nhật-ký-audit-và-điều-phối-sự-kiện-kafka)
+4. [Yêu cầu phi chức năng](#4-yêu-cầu-phi-chức-năng)
+   - [NFR-1: Bảo mật và cô lập mạng](#nfr-1-bảo-mật-và-cô-lập-mạng)
+   - [NFR-2: Hiệu năng và tối ưu tài nguyên tự host](#nfr-2-hiệu-năng-và-tối-ưu-tài-nguyên-tự-host)
+   - [NFR-3: Khả năng bảo trì và kiến trúc phân tầng](#nfr-3-khả-năng-bảo-trì-và-kiến-trúc-phân-tầng)
+   - [NFR-4: Khả năng triển khai và CI/CD tự phục hồi](#nfr-4-khả-năng-triển-khai-và-cicd-tự-phục-hồi)
+
+---
+
+## 1. Giới thiệu
+
+### 1.1 Mục đích
+
+Tài liệu này quy định các yêu cầu chức năng và phi chức năng cho ứng dụng web **DevMapper** (Spring Boot Microservices, React.js frontend), đóng vai trò là hợp đồng kỹ thuật giữa Chủ dự án và tổ hợp AI Agent (`Sol Gốc` & `Luna`) trong quá trình xây dựng, kiểm thử và vận hành hệ thống.
+
+### 1.2 Phạm vi
+
+Hệ thống tự động thu thập siêu dữ liệu kiến trúc từ nhiều kho mã nguồn (polyrepo) thông qua CI pipeline, hợp nhất thành bản đồ phụ thuộc microservice trực quan, tính toán bán kính ảnh hưởng khi thay đổi API/Kafka topic, cung cấp ngữ cảnh chuẩn MCP cho AI Agent, đồng thời lưu trữ lịch sử kiểm thử Playwright Trace Viewer và báo cáo bảo mật Strix theo từng phiên bản.
+
+### 1.3 Đối tượng sử dụng
+
+- **Lập trình viên (Developer / Fresher):** Tra cứu sơ đồ kiến trúc, điểm cuối API, luồng sự kiện Kafka và phụ thuộc dịch vụ.
+- **Tác tử AI (AI Coding Agent):** Truy vấn ngữ cảnh kiến trúc đa repo qua giao thức MCP hoặc REST API để hỗ trợ viết code và sửa lỗi liên repo.
+- **Trưởng nhóm kỹ thuật (Tech Lead / Architect):** Giám sát thay đổi kiến trúc giữa các phiên bản, thực hiện phân tích tác động cùng 4 mô hình AI (Claude, ChatGPT, Gemini, Grok).
+- **Quản trị hệ thống (Platform Admin):** Quản lý người dùng/phân quyền qua Keycloak, giám sát kết nối NetBird, kiểm tra lịch sử Playwright Trace HTML và xử lý cảnh báo bảo mật từ Strix.
+
+## 2. Mô tả tổng quan
+
+### 2.1 Bối cảnh sản phẩm
+
+DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Developer Platform module), không mở truy cập trực tiếp ra internet công khai. Toàn bộ các dịch vụ dữ liệu và ứng dụng được tự vận hành (self-hosted) trên hạ tầng PC cá nhân, kết nối an toàn thông qua máy chủ điều phối VPN NetBird đặt trên VPS riêng.
+
+### 2.2 Giả định và ràng buộc
+
+- Hệ thống Backend ứng dụng kiến trúc **Microservices** (gồm API Gateway, Scanner Service, Topology Service, AI-MCP Service, Quality-Gov Service) viết bằng Java (Spring Boot, MyBatis). Frontend phát triển bằng TypeScript/React.
+- Toàn bộ các thành phần hạ tầng gồm **PostgreSQL, Redis, Apache Kafka, Keycloak, và MinIO** được đóng gói container và tự host trực tiếp trên PC.
+- **NetBird** được tự host trên một VPS riêng biệt có IP tĩnh làm điểm trung chuyển định tuyến WireGuard cho PC và các thiết bị truy cập.
+- Quá trình phát triển tuân thủ nghiêm ngặt quy trình điều phối đa tác tử (`Harness`), tra cứu tài liệu thời gian thực (`Context7`), rà soát bảo mật (`Strix`) và kiểm thử hồi quy tích lũy (`Playwright`) quy định tại `AGENTS.md`.
+
+## 3. Yêu cầu chức năng
+
+### FR-1: Quản lý cụm hệ thống (System Group) và đồng bộ Polyrepo
+
+- Cho phép tạo và quản lý các cụm hệ thống (`SYSTEM_GROUP`), mỗi cụm chứa danh sách nhiều kho mã nguồn (`REPOSITORY`) trên GitLab hoặc GitHub.
+- Cung cấp khóa xác thực (Ingestion Token) cho phép các pipeline CI gửi kết quả quét mã nguồn của từng repo về DevMapper.
+- Lưu trữ lịch sử từng lần quét dưới dạng bản chụp (`SCAN_SNAPSHOT`) gắn với mã commit SHA, nhánh git và nhãn phiên bản.
+
+### FR-2: Phân tích mã nguồn tĩnh và xây dựng đồ thị phụ thuộc
+
+- Bộ phân tích tĩnh (Tree-sitter AST, OpenAPI/AsyncAPI) của `scanner-service` tự động trích xuất:
+  - Danh sách dịch vụ (`SERVICE_NODE`) và các tài nguyên hạ tầng liên quan (Database, Redis cache, External API).
+  - Các hợp đồng giao tiếp (`EXPOSED_CONTRACT`): phương thức HTTP, đường dẫn URL, định dạng request/response DTO, tên file và dòng code.
+  - Các điểm gọi ra bên ngoài (`DEPENDENCY_EDGE`): lệnh gọi HTTP đồng bộ, lệnh publish/subscribe vào `MESSAGE_TOPIC` (Kafka), kèm vị trí dòng code gọi.
+- `topology-service` tự động đối chiếu và nối các đầu mối rời rạc giữa các repo thành luồng hoàn chỉnh.
+- Lưu bản gốc AST JSON lên MinIO và nạp đồ thị đã tổng hợp vào PostgreSQL cùng bộ nhớ đệm Redis.
+
+### FR-3: Bản đồ tương tác, phân tích tác động và cổng ngữ cảnh MCP
+
+- Hiển thị đồ thị kiến trúc trên giao diện web bằng React Flow: hỗ trợ phóng to/thu nhỏ, lọc theo cụm repo, lọc theo loại kết nối (HTTP/Kafka/DB), và tìm kiếm nhanh.
+- **Phân tích bán kính ảnh hưởng (Blast Radius / Impact Analysis):** Truy vấn đệ quy toàn bộ cây phụ thuộc để chỉ ra danh sách các repo và vị trí file code sẽ bị ảnh hưởng nếu thay đổi một `EXPOSED_CONTRACT` hoặc `MESSAGE_TOPIC`.
+- **Tích hợp Đa mô hình AI (Claude, ChatGPT, Gemini, Grok):** Gửi đồ thị tác động tới 4 mô hình AI để nhận phân tích rủi ro và gợi ý sửa code chéo repo.
+- **Cổng giao thức MCP:** Cung cấp endpoint MCP chuẩn tại `ai-mcp-service` để Claude Code và OpenAI Codex tự động gọi và nạp ngữ cảnh kiến trúc liên repo.
+
+### FR-4: Quản lý kiểm thử tích lũy Playwright và báo cáo bảo mật Strix
+
+- Sau mỗi đợt thay đổi codebase, hệ thống ghi nhận kết quả chạy Playwright E2E với tổng số lượng test case tích lũy tăng dần.
+- Lưu trữ gói kết quả HTML và dữ liệu **Playwright Trace Viewer** vào thư mục `testing/versions/` và đồng bộ lên MinIO, cho phép xem lại bản preview HTML trực tiếp trên giao diện web.
+- Kích hoạt công cụ **Strix** quét điểm yếu hệ thống/lỗ hổng bảo mật sau mỗi đợt build, lưu báo cáo (`STRIX_SECURITY_REPORT`) và theo dõi trạng thái vá lỗi.
+
+### FR-5: Xác thực tập trung Keycloak và phân quyền RBAC
+
+- Đăng nhập tập trung qua **Keycloak** tự host trên PC (chuẩn OIDC/OAuth2 PKCE).
+- Đồng bộ trạng thái người dùng giữa Keycloak, cơ sở dữ liệu nội bộ và hệ thống VPN NetBird.
+- Phân quyền theo vai trò (RBAC), kiểm tra bắt buộc tại tầng bộ lọc bảo mật của API Gateway và từng Microservice.
+- Sử dụng dịch vụ SMTP của **Brevo** qua Keycloak để gửi email vòng đời tài khoản.
+
+### FR-6: Nhật ký Audit và điều phối sự kiện Kafka
+
+- Sử dụng **Apache Kafka (KRaft)** để giao tiếp bất đồng bộ giữa các microservices (ví dụ: `scanner-service` quét xong bắn sự kiện cho `topology-service`).
+- Ghi nhật ký bất biến (`AUDIT_LOG`) cho mọi thao tác thay đổi cấu hình, kích hoạt quét lại, sửa ma trận phân quyền và khóa/xóa tài khoản.
+
+## 4. Yêu cầu phi chức năng
+
+### NFR-1: Bảo mật và cô lập mạng
+
+- Toàn bộ kết nối sử dụng TLS thông qua reverse proxy **Traefik** với chứng chỉ Let's Encrypt cấp phát tự động.
+- **Cô lập mạng Zero-Trust:** Các dịch vụ tự host trên PC không mở port public. Mọi truy cập vào DevMapper, Keycloak, MinIO, PostgreSQL đều đi qua mạng ảo **NetBird** (100.64.0.0/10). Traefik chỉ bind cổng `443` vào dải IP NetBird.
+- Mã nguồn và cấu hình không chứa secret cứng; mọi đợt cập nhật phải vượt qua cổng kiểm tra Strix.
+
+### NFR-2: Hiệu năng và tối ưu tài nguyên tự host
+
+- Đồ thị kiến trúc của các nhánh chính phải được lưu đệm trên **Redis** để đảm bảo tốc độ truy vấn < 200ms.
+- Phân bổ `mem_limit` chặt chẽ trong Docker Compose cho Keycloak, Kafka KRaft và PostgreSQL để tránh tràn RAM trên máy PC cá nhân.
+
+### NFR-3: Khả năng bảo trì và kiến trúc phân tầng
+
+- Backend áp dụng kiến trúc **Microservices** nghiêm ngặt. **PostgreSQL được chia thành 4 schemas riêng biệt** (`scanner_db`, `topology_db`, `ai_db`, `gov_db`). Nghiêm cấm `JOIN` xuyên schema; các service giao tiếp qua REST/gRPC/Kafka. Phân tầng nội bộ: `Controller -> Service -> Mapper -> Model`.
+- Frontend tuân thủ chuỗi gọi đơn bước `Page -> Component -> Hook -> API` và quy tắc barrel `index.ts`, kiểm soát bằng `dependency-cruiser`.
+
+### NFR-4: Khả năng triển khai và CI/CD tự phục hồi
+
+- Tích hợp **GitHub Actions** dùng **Self-hosted Runner** cấu hình sẵn.
+- Áp dụng **Incremental Build** (biên dịch gia tăng) trên Gradle và Vite để tối ưu thời gian build.
+- **Cơ chế tự phục hồi (Self-healing Pipeline):** Khi phát hiện log `ERROR` hoặc `WARN`, tổ hợp Agent (`Luna` -> `Sol Chính` -> `Sol Gốc`) tự động phân tích vùng sửa đổi, áp dụng bản vá và chạy lại pipeline tới khi thành công.
+
+---
+
+*Xem thêm: [`PRD.md`](./PRD.md) cho bối cảnh sản phẩm, [`ERD.md`](./ERD.md) cho mô hình dữ liệu chi tiết, và [`../AGENTS.md`](../AGENTS.md) cho quy tắc vận hành đội ngũ Agent.*
