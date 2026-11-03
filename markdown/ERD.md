@@ -19,7 +19,7 @@ erDiagram
     SCAN_SNAPSHOT ||--o{ SERVICE_NODE : defines
     SCAN_SNAPSHOT ||--o{ DEPENDENCY_EDGE : maps
     SCAN_SNAPSHOT ||--o{ TEST_TRACE_ARTIFACT : attaches
-    SCAN_SNAPSHOT ||--o{ STRIX_SECURITY_REPORT : generates
+    SCAN_SNAPSHOT ||--o{ SECURITY_REPORT : generates
 
     SERVICE_NODE ||--o{ EXPOSED_CONTRACT : exposes
     SERVICE_NODE ||--o{ DEPENDENCY_EDGE : "originates (source)"
@@ -31,15 +31,6 @@ erDiagram
     SCAN_SNAPSHOT ||--o{ AI_IMPACT_SESSION : "provides context"
     USER ||--o{ NOTIFICATION : receives
     USER ||--o{ AUDIT_LOG : performs
-
-    KEYCLOAK ||--o{ SYSTEM_GROUP : federates
-    KEYCLOAK ||--o{ USER : authenticates
-    NETBIRD ||--o{ USER : "gates access"
-    MINIO ||--o{ SCAN_SNAPSHOT : "stores raw AST"
-    MINIO ||--o{ TEST_TRACE_ARTIFACT : "stores HTML trace"
-    MINIO ||--o{ STRIX_SECURITY_REPORT : "stores full report"
-    KAFKA ||--o{ SCAN_SNAPSHOT : "ingests via event"
-    REDIS ||--o{ SCAN_SNAPSHOT : "caches active graph"
 
     SYSTEM_GROUP {
         uuid group_id PK
@@ -150,7 +141,7 @@ erDiagram
         string minio_trace_html_key
         timestamp executed_at
     }
-    STRIX_SECURITY_REPORT {
+    SECURITY_REPORT {
         uuid report_id PK
         uuid snapshot_id FK
         string highest_severity
@@ -195,3 +186,17 @@ erDiagram
         uuid role_id FK
         uuid permission_id FK
     }
+```
+
+## Thực thể theo Schema (đề xuất, chờ `Opus Architect` chốt trong `PLAN.md`)
+
+| Schema (service) | Bảng |
+|---|---|
+| `scanner_db` (`scanner-service`) | `REPOSITORY`, `SCAN_SNAPSHOT` |
+| `topology_db` (`topology-service`) | `SERVICE_NODE`, `EXPOSED_CONTRACT`, `MESSAGE_TOPIC`, `DEPENDENCY_EDGE` |
+| `ai_db` (`ai-mcp-service`) | `AI_IMPACT_SESSION` |
+| `gov_db` (`quality-gov-service`) | `SYSTEM_GROUP`, `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION`, `TEST_TRACE_ARTIFACT`, `SECURITY_REPORT` |
+
+**Quy tắc tham chiếu chéo:** các cột `group_id`, `snapshot_id`, `user_id`, `actor_id` trỏ sang schema khác chỉ là khóa logic (không tạo `FOREIGN KEY`, không `JOIN`); service sở hữu tự kiểm tra tồn tại qua REST/gRPC/Kafka. Chỉ các quan hệ nằm trong cùng schema mới có ràng buộc FK ở mức DB.
+
+**Hạ tầng không phải thực thể** (đã loại khỏi sơ đồ): Keycloak (định danh qua `keycloak_user_id`, `keycloak_group_id`), NetBird (`netbird_group_id`, `netbird_connected`), MinIO (các cột `minio_*_key`), Kafka (sự kiện hoàn tất quét), Redis (cache đồ thị `global-graph`).

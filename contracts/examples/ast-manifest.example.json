@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "scanner": { "name": "devmapper-scanner-cli", "version": "0.1.0" },
+  "repo": { "name": "order-service", "git_url": "https://gitlab.example.com/shop/order-service.git", "default_branch": "main" },
+  "commit_sha": "3f2a9c1d4e5b6a7980c1d2e3f4a5b6c7d8e9f0a1",
+  "branch": "main",
+  "ci_run_id": "pipeline-1024",
+  "generated_at": "2026-11-03T08:00:00Z",
+  "services": [
+    {
+      "service_key": "order-service",
+      "root_path": ".",
+      "language": "java",
+      "framework": "spring-boot",
+      "exposed_contracts": [
+        {
+          "protocol": "HTTP",
+          "http_method": "GET",
+          "path": "/api/orders/{id}",
+          "operation_id": "getOrder",
+          "response_schema": { "type": "object", "properties": { "id": { "type": "string" }, "total": { "type": "number" } } },
+          "source": { "file": "src/main/java/shop/order/OrderController.java", "line": 31 }
+        }
+      ],
+      "dependencies": [
+        {
+          "interaction_type": "HTTP_CALL",
+          "target": { "service_hint": "payment-service", "http_method": "POST", "path": "/api/payments" },
+          "call_site": { "file": "src/main/java/shop/order/PaymentClient.java", "line": 14 },
+          "resolution": "STATIC"
+        },
+        {
+          "interaction_type": "DB_ACCESS",
+          "target": { "resource": "postgres:orders" },
+          "call_site": { "file": "src/main/resources/application.yml", "line": 8 },
+          "resolution": "CONFIG"
+        }
+      ],
+      "messaging": [
+        {
+          "direction": "PUBLISH",
+          "broker": "KAFKA",
+          "topic": "order.created",
+          "payload_type": "shop.order.OrderCreatedEvent",
+          "call_site": { "file": "src/main/java/shop/order/OrderService.java", "line": 57 }
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    { "source": { "file": "src/main/java/shop/order/LegacyClient.java", "line": 22 }, "message": "URL ghép chuỗi runtime, không bóc tách được" }
+  ]
+}

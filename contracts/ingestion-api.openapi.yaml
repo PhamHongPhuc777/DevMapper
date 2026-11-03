@@ -1,0 +1,331 @@
+openapi: 3.1.0
+info:
+  title: DevMapper scanner-service API
+  version: 1.0.0
+  description: |
+    API của scanner-service. Ba nhóm, mỗi nhóm một cơ chế xác thực:
+    - `ingest` (công khai qua reverse proxy): CI gửi manifest, tải ai-architecture-context.json. Bearer Ingestion Token (mỗi repo 1 token).
+    - `admin` (chỉ nội bộ): quản lý System Group, Repository, cấp/xoay token. Bearer DEVMAPPER_ADMIN_TOKEN (MVP, thay bằng Keycloak ở Phase 2).
+    - `internal` (chỉ mạng docker): topology-service lấy manifest gốc. Header X-Internal-Token.
+    Lỗi trả theo RFC 9457 (application/problem+json). Reverse proxy chỉ được mở `/api/v1/ingest/**`.
+servers:
+  - url: https://devmapper.internal
+tags:
+  - name: ingest
+  - name: admin
+  - name: internal
+
+paths:
+  /api/v1/ingest/manifests:
+    post:
+      tags: [ingest]
+      operationId: ingestManifest
+      summary: Nhận AST Manifest của 1 repo tại 1 commit
+      description: |
+        Token xác định repo; `repo.git_url` trong body phải khớp repo của token, nếu không trả 403.
+        Idempotent theo (repo, commit_sha, branch): gửi lại trả 200 với snapshot cũ.
+        Body tối đa 10 MiB.
+      security: [{ ingestionToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: './ast-manifest.schema.json' }
+      responses:
+        '202':
+          description: Đã nhận, lưu MinIO, sẽ phát sự kiện tới topology-service
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IngestResponse' }
+        '200':
+          description: Trùng (repo, commit_sha, branch), trả snapshot đã có
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IngestResponse' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '413': { $ref: '#/components/responses/Problem' }
+        '415': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+
+  /api/v1/ingest/ai-context:
+    get:
+      tags: [ingest]
+      operationId: getAiContext
+      summary: Tải ai-architecture-context.json của System Group chứa repo của token
+      description: scanner-service xác thực token rồi gọi topology-service `GET /internal/v1/ai-context?group_id=...` (1 lần gọi, không lặp). Định dạng ở contracts/mcp-tools.md.
+      security: [{ ingestionToken: [] }]
+      parameters:
+        - { name: service_key, in: query, required: false, schema: { type: string, maxLength: 100 }, description: Thu hẹp theo 1 service (mặc định toàn group) }
+        - { name: depth, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 3, default: 1 } }
+      responses:
+        '200':
+          description: Gói ngữ cảnh
+          headers:
+            ETag: { schema: { type: string }, description: '"g<graph_version>"' }
+          content:
+            application/json:
+              schema: { type: object, description: Xem AiArchitectureContext trong contracts/mcp-tools.md }
+        '304': { description: Không đổi so với If-None-Match }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '502': { $ref: '#/components/responses/Problem' }
+
+  /api/v1/admin/groups:
+    post:
+      tags: [admin]
+      operationId: createGroup
+      security: [{ adminToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateGroupRequest' }
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Group' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [admin]
+      operationId: listGroups
+      security: [{ adminToken: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Trang kết quả
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Group' } }
+
+  /api/v1/admin/groups/{groupId}/repositories:
+    parameters:
+      - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [admin]
+      operationId: registerRepository
+      summary: Đăng ký repo, trả Ingestion Token đúng 1 lần
+      security: [{ adminToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRepositoryRequest' }
+      responses:
+        '201':
+          description: Đã tạo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RepositoryWithToken' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [admin]
+      operationId: listRepositories
+      security: [{ adminToken: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Trang kết quả
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Repository' } }
+
+  /api/v1/admin/repositories/{repoId}/rotate-token:
+    parameters:
+      - { name: repoId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [admin]
+      operationId: rotateIngestionToken
+      summary: Thu hồi token cũ, trả token mới đúng 1 lần
+      security: [{ adminToken: [] }]
+      responses:
+        '200':
+          description: Token mới
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RepositoryWithToken' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /api/v1/admin/repositories/{repoId}/snapshots:
+    parameters:
+      - { name: repoId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [admin]
+      operationId: listSnapshots
+      security: [{ adminToken: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Mới nhất trước
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Snapshot' } }
+
+  /internal/v1/snapshots/{snapshotId}/manifest:
+    parameters:
+      - { name: snapshotId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [internal]
+      operationId: getSnapshotManifest
+      summary: Trả manifest gốc từ MinIO (topology-service gọi khi nhận sự kiện)
+      security: [{ internalToken: [] }]
+      responses:
+        '200':
+          description: Manifest nguyên bản
+          content:
+            application/json:
+              schema: { $ref: './ast-manifest.schema.json' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+components:
+  securitySchemes:
+    ingestionToken:
+      type: http
+      scheme: bearer
+      description: 'Dạng "dmi_" + 43 ký tự base64url (32 byte ngẫu nhiên). Server chỉ lưu SHA-256 hex, so sánh constant-time.'
+    adminToken:
+      type: http
+      scheme: bearer
+    internalToken:
+      type: apiKey
+      in: header
+      name: X-Internal-Token
+
+  parameters:
+    Limit:
+      { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+    Cursor:
+      { name: cursor, in: query, required: false, schema: { type: string, maxLength: 200 }, description: Giá trị next_cursor của trang trước (opaque) }
+
+  responses:
+    Problem:
+      description: Lỗi RFC 9457
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          description: Lỗi validate theo trường (chỉ 400)
+          items:
+            type: object
+            properties:
+              pointer: { type: string, description: JSON Pointer, vd /services/0/service_key }
+              message: { type: string }
+
+    Page:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array }
+        next_cursor: { type: [string, 'null'] }
+
+    IngestResponse:
+      type: object
+      required: [snapshot_id, repo_id, group_id, status, received_at, duplicate]
+      properties:
+        snapshot_id: { type: string, format: uuid }
+        repo_id: { type: string, format: uuid }
+        group_id: { type: string, format: uuid }
+        status: { enum: [RECEIVED, PUBLISHED, FAILED] }
+        received_at: { type: string, format: date-time }
+        duplicate: { type: boolean }
+        warnings_count: { type: integer }
+
+    CreateGroupRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, pattern: '^[a-z0-9][a-z0-9._-]{0,99}$' }
+        description: { type: string, maxLength: 500 }
+
+    Group:
+      type: object
+      properties:
+        group_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+
+    RegisterRepositoryRequest:
+      type: object
+      additionalProperties: false
+      required: [name, git_url, default_branch]
+      properties:
+        name: { type: string, pattern: '^[a-z0-9][a-z0-9._-]{0,99}$' }
+        git_url: { type: string, maxLength: 512, pattern: '^(https://|git@)[^\s]+$' }
+        default_branch: { type: string, maxLength: 255 }
+        language_stack: { type: string, maxLength: 100 }
+
+    Repository:
+      type: object
+      properties:
+        repo_id: { type: string, format: uuid }
+        group_id: { type: string, format: uuid }
+        name: { type: string }
+        git_url: { type: string }
+        default_branch: { type: string }
+        language_stack: { type: [string, 'null'] }
+        token_rotated_at: { type: string, format: date-time }
+        last_scanned_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    RepositoryWithToken:
+      allOf:
+        - $ref: '#/components/schemas/Repository'
+        - type: object
+          required: [ingestion_token]
+          properties:
+            ingestion_token: { type: string, description: Chỉ trả 1 lần, không lưu plaintext }
+
+    Snapshot:
+      type: object
+      properties:
+        snapshot_id: { type: string, format: uuid }
+        repo_id: { type: string, format: uuid }
+        branch_name: { type: string }
+        commit_sha: { type: string }
+        version_tag: { type: [string, 'null'] }
+        ci_run_id: { type: [string, 'null'] }
+        status: { enum: [RECEIVED, PUBLISHED, FAILED] }
+        manifest_sha256: { type: string }
+        created_at: { type: string, format: date-time }
+        published_at: { type: [string, 'null'], format: date-time }

@@ -1,0 +1,6 @@
+_workspace/
+.claude/settings.local.json
+node_modules/
+build/
+.gradle/
+infra/.env

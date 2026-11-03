@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmapper.local/contracts/ast-manifest.schema.json",
+  "title": "DevMapper AST Manifest v1",
+  "description": "Kết quả quét tĩnh 1 repo tại 1 commit, do scanner-cli sinh trên CI và gửi lên POST /api/v1/ingest/manifests. Mọi đường dẫn file là tương đối so với gốc repo.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scanner", "repo", "commit_sha", "branch", "generated_at", "services"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "scanner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "maxLength": 64 },
+        "version": { "type": "string", "maxLength": 32 }
+      }
+    },
+    "repo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "git_url"],
+      "properties": {
+        "name": { "$ref": "#/$defs/slug" },
+        "git_url": { "type": "string", "maxLength": 512, "pattern": "^(https://|git@)[^\\s]+$" },
+        "default_branch": { "$ref": "#/$defs/branch" }
+      }
+    },
+    "commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$" },
+    "branch": { "$ref": "#/$defs/branch" },
+    "version_tag": { "type": "string", "maxLength": 128 },
+    "ci_run_id": { "type": "string", "maxLength": 128 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "services": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/service" }
+    },
+    "warnings": {
+      "description": "Điểm gọi động không bóc tách được (URL ghép chuỗi runtime...).",
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["message"],
+        "properties": {
+          "source": { "$ref": "#/$defs/sourceRef" },
+          "message": { "type": "string", "maxLength": 500 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,99}$" },
+    "branch": { "type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[^\\s~^:?*\\[\\\\]+$" },
+    "relPath": {
+      "description": "Đường dẫn tương đối, dấu '/', cấm tuyệt đối và '..'.",
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(^|/)\\.\\.(/|$))[^\\\\\\u0000]+$"
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "line"],
+      "properties": {
+        "file": { "$ref": "#/$defs/relPath" },
+        "line": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "httpMethod": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] },
+    "httpPath": {
+      "description": "Path template, biến dạng {name} (scanner chuẩn hóa ':name' về {name}).",
+      "type": "string",
+      "maxLength": 512,
+      "pattern": "^/[^\\s]*$"
+    },
+    "jsonSchemaFragment": {
+      "description": "Mô tả DTO rút gọn (JSON Schema con), tối đa ~16KB khi serialize.",
+      "type": "object"
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service_key", "root_path", "language"],
+      "properties": {
+        "service_key": { "$ref": "#/$defs/slug", "description": "Lấy từ spring.application.name, fallback tên thư mục module." },
+        "display_name": { "type": "string", "maxLength": 200 },
+        "root_path": { "$ref": "#/$defs/relPath" },
+        "language": { "enum": ["java", "kotlin", "typescript", "javascript", "go", "other"] },
+        "framework": { "type": "string", "maxLength": 64 },
+        "node_type": { "enum": ["SERVICE", "DATABASE", "CACHE", "EXTERNAL"], "default": "SERVICE" },
+        "exposed_contracts": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["protocol", "source"],
+            "properties": {
+              "protocol": { "enum": ["HTTP", "GRPC"] },
+              "http_method": { "$ref": "#/$defs/httpMethod" },
+              "path": { "$ref": "#/$defs/httpPath" },
+              "grpc_method": { "type": "string", "maxLength": 300, "description": "package.Service/Method" },
+              "operation_id": { "type": "string", "maxLength": 200 },
+              "request_schema": { "$ref": "#/$defs/jsonSchemaFragment" },
+              "response_schema": { "$ref": "#/$defs/jsonSchemaFragment" },
+              "source": { "$ref": "#/$defs/sourceRef" }
+            },
+            "allOf": [
+              { "if": { "properties": { "protocol": { "const": "HTTP" } } }, "then": { "required": ["http_method", "path"] } },
+              { "if": { "properties": { "protocol": { "const": "GRPC" } } }, "then": { "required": ["grpc_method"] } }
+            ]
+          }
+        },
+        "dependencies": {
+          "description": "Điểm gọi đồng bộ ra ngoài (HTTP/gRPC/DB).",
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["interaction_type", "target", "call_site", "resolution"],
+            "properties": {
+              "interaction_type": { "enum": ["HTTP_CALL", "GRPC_CALL", "DB_ACCESS"] },
+              "target": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "service_hint": { "$ref": "#/$defs/slug", "description": "Tên service đích (FeignClient name, host nội bộ, ...)." },
+                  "base_url": { "type": "string", "maxLength": 512 },
+                  "http_method": { "$ref": "#/$defs/httpMethod" },
+                  "path": { "$ref": "#/$defs/httpPath" },
+                  "grpc_method": { "type": "string", "maxLength": 300 },
+                  "resource": { "type": "string", "maxLength": 200, "description": "Tên DB/cache cho DB_ACCESS, vd: postgres:orders" }
+                }
+              },
+              "call_site": { "$ref": "#/$defs/sourceRef" },
+              "resolution": { "enum": ["STATIC", "CONFIG", "DYNAMIC"], "description": "STATIC: literal trong code; CONFIG: nội suy từ application.yml/.env; DYNAMIC: không chắc chắn." }
+            }
+          }
+        },
+        "messaging": {
+          "description": "Kafka publish/subscribe.",
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["direction", "broker", "topic", "call_site"],
+            "properties": {
+              "direction": { "enum": ["PUBLISH", "SUBSCRIBE"] },
+              "broker": { "enum": ["KAFKA"] },
+              "topic": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,249}$" },
+              "payload_type": { "type": "string", "maxLength": 300 },
+              "payload_schema": { "$ref": "#/$defs/jsonSchemaFragment" },
+              "call_site": { "$ref": "#/$defs/sourceRef" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
