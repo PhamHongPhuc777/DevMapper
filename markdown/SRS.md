@@ -19,7 +19,7 @@
    - [FR-1: Quản lý cụm hệ thống (System Group) và đồng bộ Polyrepo](#fr-1-quản-lý-cụm-hệ-thống-system-group-và-đồng-bộ-polyrepo)
    - [FR-2: Phân tích mã nguồn tĩnh và xây dựng đồ thị phụ thuộc](#fr-2-phân-tích-mã-nguồn-tĩnh-và-xây-dựng-đồ-thị-phụ-thuộc)
    - [FR-3: Bản đồ tương tác, phân tích tác động và cổng ngữ cảnh MCP](#fr-3-bản-đồ-tương-tác-phân-tích-tác-động-và-cổng-ngữ-cảnh-mcp)
-   - [FR-4: Quản lý kiểm thử tích lũy Playwright và báo cáo bảo mật Claude Security](#fr-4-quản-lý-kiểm-thử-tích-lũy-playwright-và-báo-cáo-bảo-mật-claude-security)
+   - [FR-4: Quản lý báo cáo bảo mật Claude Security](#fr-4-quản-lý-báo-cáo-bảo-mật-claude-security)
    - [FR-5: Xác thực tập trung Keycloak và phân quyền RBAC](#fr-5-xác-thực-tập-trung-keycloak-và-phân-quyền-rbac)
    - [FR-6: Nhật ký Audit và điều phối sự kiện Kafka](#fr-6-nhật-ký-audit-và-điều-phối-sự-kiện-kafka)
 4. [Yêu cầu phi chức năng](#4-yêu-cầu-phi-chức-năng)
@@ -27,6 +27,7 @@
    - [NFR-2: Hiệu năng và tối ưu tài nguyên tự host](#nfr-2-hiệu-năng-và-tối-ưu-tài-nguyên-tự-host)
    - [NFR-3: Khả năng bảo trì và kiến trúc phân tầng](#nfr-3-khả-năng-bảo-trì-và-kiến-trúc-phân-tầng)
    - [NFR-4: Khả năng triển khai và CI/CD tự phục hồi](#nfr-4-khả-năng-triển-khai-và-cicd-tự-phục-hồi)
+   - [NFR-5: Phạm vi kiểm thử E2E của client (Playwright)](#nfr-5-phạm-vi-kiểm-thử-e2e-của-client-playwright)
 
 ---
 
@@ -38,14 +39,14 @@ Tài liệu này quy định các yêu cầu chức năng và phi chức năng c
 
 ### 1.2 Phạm vi
 
-Hệ thống tự động thu thập siêu dữ liệu kiến trúc từ nhiều kho mã nguồn (polyrepo) thông qua CI pipeline, hợp nhất thành bản đồ phụ thuộc microservice trực quan, tính toán bán kính ảnh hưởng khi thay đổi API/Kafka topic, cung cấp ngữ cảnh chuẩn MCP cho AI Agent, đồng thời lưu trữ lịch sử kiểm thử Playwright Trace Viewer và báo cáo bảo mật Claude Security theo từng phiên bản.
+Hệ thống tự động thu thập siêu dữ liệu kiến trúc từ nhiều kho mã nguồn (polyrepo) thông qua CI pipeline, hợp nhất thành bản đồ phụ thuộc microservice trực quan, tính toán bán kính ảnh hưởng khi thay đổi API/Kafka topic, cung cấp ngữ cảnh chuẩn MCP cho AI Agent, đồng thời lưu trữ báo cáo bảo mật Claude Security theo từng phiên bản.
 
 ### 1.3 Đối tượng sử dụng
 
 - **Lập trình viên (Developer / Fresher):** Tra cứu sơ đồ kiến trúc, điểm cuối API, luồng sự kiện Kafka và phụ thuộc dịch vụ.
 - **Tác tử AI (AI Coding Agent):** Truy vấn ngữ cảnh kiến trúc đa repo qua giao thức MCP hoặc REST API để hỗ trợ viết code và sửa lỗi liên repo.
 - **Trưởng nhóm kỹ thuật (Tech Lead / Architect):** Giám sát thay đổi kiến trúc giữa các phiên bản, thực hiện phân tích tác động cùng 4 mô hình AI (Claude, ChatGPT, Gemini, Grok).
-- **Quản trị hệ thống (Platform Admin):** Quản lý người dùng/phân quyền qua Keycloak, giám sát truy cập mạng, kiểm tra lịch sử Playwright Trace HTML và xử lý cảnh báo bảo mật từ Claude Security.
+- **Quản trị hệ thống (Platform Admin):** Quản lý người dùng/phân quyền qua Keycloak, giám sát truy cập mạng và xử lý cảnh báo bảo mật từ Claude Security.
 
 ## 2. Mô tả tổng quan
 
@@ -84,10 +85,8 @@ DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Develope
 - **Tích hợp Đa mô hình AI (Claude, ChatGPT, Gemini, Grok) — Phase 3:** Gửi đồ thị tác động tới các mô hình AI qua interface `AiProvider` để nhận phân tích rủi ro và gợi ý sửa code chéo repo; MVP chỉ cần 1 provider.
 - **Cổng giao thức MCP:** Cung cấp endpoint MCP chuẩn tại `ai-mcp-service` để Claude Code và OpenAI Codex tự động gọi và nạp ngữ cảnh kiến trúc liên repo.
 
-### FR-4: Quản lý kiểm thử tích lũy Playwright và báo cáo bảo mật Claude Security
+### FR-4: Quản lý báo cáo bảo mật Claude Security
 
-- Sau mỗi đợt thay đổi codebase, hệ thống ghi nhận kết quả chạy Playwright E2E với tổng số lượng test case tích lũy tăng dần.
-- Lưu trữ gói kết quả HTML và dữ liệu **Playwright Trace Viewer** vào thư mục `testing/versions/` và đồng bộ lên MinIO, cho phép xem lại bản preview HTML trực tiếp trên giao diện web.
 - Kích hoạt công cụ **Claude Security** quét điểm yếu hệ thống/lỗ hổng bảo mật sau mỗi đợt build, lưu báo cáo (`SECURITY_REPORT`) và theo dõi trạng thái vá lỗi.
 
 ### FR-5: Xác thực tập trung Keycloak và phân quyền RBAC
@@ -125,6 +124,11 @@ DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Develope
 - Tích hợp **GitHub Actions** dùng **Self-hosted Runner** cấu hình sẵn.
 - Áp dụng **Incremental Build** (biên dịch gia tăng) trên Gradle và Vite để tối ưu thời gian build.
 - **Cơ chế tự phục hồi (Self-healing Pipeline):** Khi phát hiện log `ERROR` hoặc `WARN`, tổ hợp Agent (`Sonnet Executor` -> `Haiku Router` -> `Opus Architect`) tự động phân tích vùng sửa đổi, áp dụng bản vá và chạy lại pipeline tới khi thành công.
+
+### NFR-5: Phạm vi kiểm thử E2E của client (Playwright)
+
+- Playwright chỉ kiểm thử **client frontend của chính DevMapper**. Không chạy lên các repo được quét và không phải chức năng dành cho nhà phát triển khi dùng ứng dụng.
+- Bộ test tích lũy tăng dần sau mỗi đợt thay đổi client (toàn bộ test cũ + mới). Báo cáo HTML kèm Trace Viewer là artifact của quy trình phát triển, lưu ở `testing/versions/` (có thể sao lưu lên MinIO) và mở bằng `npx playwright show-report`; không phải màn hình trong ứng dụng.
 
 ---
 

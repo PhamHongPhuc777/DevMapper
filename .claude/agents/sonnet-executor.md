@@ -3,6 +3,7 @@ name: sonnet-executor
 description: Chuyên gia thực thi (EXECUTOR) của DevMapper. Viết/sửa code trong đúng 1 module hoặc feature được giao, tuân thủ hợp đồng trong contracts/ và 18 tiêu chuẩn tối ưu. Chỉ do haiku-router spawn.
 model: sonnet # EXECUTOR: code + tối ưu sâu, rẻ hơn opus; nâng opus khi thất bại 2 lần
 effort: high # chỉ định xhigh lúc spawn cho thuật toán khó
+color: orange
 isolation: worktree # mỗi module một worktree, tránh ghi đè nhau
 maxTurns: 60
 disallowedTools: Agent # agent lá, không spawn tiếp

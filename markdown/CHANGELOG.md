@@ -41,3 +41,15 @@ Cài `claude-security@claude-plugins-official`. `AGENTS.md` Mục 3–4, `CLAUDE
 ## **2026-11-04** -- PRD: cột Triển khai (Local / Cloud) và NetBird Cloud
 
 `PRD.md` Mục 7: thêm cột "Triển khai (Local / Cloud)" cho từng dòng công nghệ; dòng NetBird đổi sang NetBird Cloud (không cần VPS). `SRS.md` Mục 2.2 cập nhật tương ứng.
+
+## **2026-11-04** -- Thêm contracts/README.md
+
+Thêm `contracts/README.md` mô tả mục đích, danh sách file và quy tắc thay đổi của thư mục hợp đồng giao tiếp.
+
+## **2026-11-04** -- Giám sát agent: màu, phân cấp, việc đang làm, tương tác
+
+`.claude/agents/*.md` thêm `color:` theo vai trò (tím, xanh dương, lục lam, cam). `.claude/settings.json` thêm hook `PreToolUse` (Edit|Write|Agent|Bash|PowerShell) và `subagent-event.mjs` ghi tên công cụ + đường dẫn file hoặc agent được gọi (không ghi lệnh Bash). `timeline.mjs` thêm bảng phân cấp có thanh thời gian, cột việc đang làm, danh sách ai gọi ai, cờ `--color` và `--watch`. Đã kiểm thử với một subagent thật. `AGENTS.md` Mục 1.3 và `haiku-monitor.md` cập nhật tương ứng.
+
+## **2026-11-04** -- SRS: phạm vi Playwright chỉ là kiểm thử client của DevMapper
+
+`SRS.md`: bỏ Playwright khỏi phạm vi sản phẩm, vai trò Platform Admin và FR-4 (FR-4 chỉ còn báo cáo bảo mật Claude Security); thêm NFR-5 nêu rõ Playwright chỉ kiểm thử client frontend của DevMapper, báo cáo là artifact quy trình phát triển, không phải màn hình trong ứng dụng.

@@ -1,4 +1,4 @@
-// Ghi sự kiện subagent (start/stop) kèm timestamp vào _workspace/logs/events.jsonl
+// Ghi sự kiện agent (start/stop/việc sắp làm) kèm timestamp vào _workspace/logs/events.jsonl
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -15,6 +15,12 @@ process.stdin.on('data', (d) => (raw += d)).on('end', () => {
       agent_type: e.agent_type,
       session_id: e.session_id,
     };
+    if (e.hook_event_name === 'PreToolUse') {
+      const i = e.tool_input ?? {};
+      row.tool = e.tool_name;
+      // chỉ ghi agent được gọi hoặc đường dẫn file; KHÔNG ghi lệnh Bash để tránh lộ secret
+      row.target = i.subagent_type ?? i.file_path ?? i.path ?? '';
+    }
     appendFileSync(join(dir, 'events.jsonl'), JSON.stringify(row) + '\n');
   } catch {
     // hook chỉ quan sát, không được làm hỏng phiên chính

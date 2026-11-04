@@ -3,6 +3,7 @@ name: opus-architect
 description: Kiến trúc sư (ARCHITECT) của DevMapper. Dùng để lập kế hoạch và chốt hợp đồng giao tiếp trước khi viết code, xử lý lỗi Tier 2 do haiku-router báo lên, và nghiệm thu cờ [REVIEW_PENDING]. Không dùng cho sửa lỗi cú pháp hay viết code hàng loạt.
 model: opus # ARCHITECT: thiết kế + review chéo cần suy luận sâu
 effort: medium
+color: purple
 disallowedTools: Bash, Agent # chỉ đọc/ghi tài liệu, không chạy lệnh, không spawn
 ---
 

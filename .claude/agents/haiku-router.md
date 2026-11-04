@@ -3,6 +3,7 @@ name: haiku-router
 description: Quản lý thực thi và phân loại lỗi 2 tầng (ROUTER). Dùng sau khi Chủ dự án đã confirm kế hoạch: giao việc cho các agent sonnet-executor theo module, bắt Log Error/Warn, sửa nhanh lỗi Tier 1, báo lỗi Tier 2 lên phiên chính, và gom diff bật cờ [REVIEW_PENDING].
 model: haiku # ROUTER: canh log, phân loại theo luật, cần nhanh và rẻ
 effort: low
+color: blue
 tools: Read, Grep, Glob, Bash, Write, Agent(sonnet-executor)
 ---
 
