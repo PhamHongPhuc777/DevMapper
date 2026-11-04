@@ -18,7 +18,6 @@ erDiagram
     REPOSITORY ||--o{ SCAN_SNAPSHOT : produces
     SCAN_SNAPSHOT ||--o{ SERVICE_NODE : defines
     SCAN_SNAPSHOT ||--o{ DEPENDENCY_EDGE : maps
-    SCAN_SNAPSHOT ||--o{ TEST_TRACE_ARTIFACT : attaches
     SCAN_SNAPSHOT ||--o{ SECURITY_REPORT : generates
 
     SERVICE_NODE ||--o{ EXPOSED_CONTRACT : exposes
@@ -130,17 +129,6 @@ erDiagram
         int call_site_line
         boolean is_breaking_risk
     }
-    TEST_TRACE_ARTIFACT {
-        uuid artifact_id PK
-        uuid snapshot_id FK
-        string version_label
-        int cumulative_test_count
-        int passed_count
-        int failed_count
-        string local_trace_dir
-        string minio_trace_html_key
-        timestamp executed_at
-    }
     SECURITY_REPORT {
         uuid report_id PK
         uuid snapshot_id FK
@@ -195,7 +183,7 @@ erDiagram
 | `scanner_db` (`scanner-service`) | `REPOSITORY`, `SCAN_SNAPSHOT` |
 | `topology_db` (`topology-service`) | `SERVICE_NODE`, `EXPOSED_CONTRACT`, `MESSAGE_TOPIC`, `DEPENDENCY_EDGE` |
 | `ai_db` (`ai-mcp-service`) | `AI_IMPACT_SESSION` |
-| `gov_db` (`quality-gov-service`) | `SYSTEM_GROUP`, `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION`, `TEST_TRACE_ARTIFACT`, `SECURITY_REPORT` |
+| `gov_db` (`quality-gov-service`) | `SYSTEM_GROUP`, `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION`, `SECURITY_REPORT` |
 
 **Quy tắc tham chiếu chéo:** các cột `group_id`, `snapshot_id`, `user_id`, `actor_id` trỏ sang schema khác chỉ là khóa logic (không tạo `FOREIGN KEY`, không `JOIN`); service sở hữu tự kiểm tra tồn tại qua REST/gRPC/Kafka. Chỉ các quan hệ nằm trong cùng schema mới có ràng buộc FK ở mức DB.
 

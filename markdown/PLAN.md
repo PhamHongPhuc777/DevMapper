@@ -282,3 +282,7 @@ Sửa tại chỗ mục "Kế hoạch MVP chính thức" theo quyết định h�
 - Mục 8: câu 1, câu 7 và thời điểm secret chuyển sang "đã trả lời"; câu 2–6 giữ chờ xác nhận, câu 6 cập nhật theo tiêu chí 18 mới.
 - Mục 9: 11 biến trong `infra/.env` do Chủ dự án tự sinh; `DEVMAPPER_INGESTION_TOKEN` chưa sinh; `DEVMAPPER_API_URL` mặc định `http://localhost:8081` phía CI.
 - `contracts/ingestion-api.openapi.yaml`: `servers` đổi sang `http://localhost:8081`, mô tả bỏ reverse proxy công khai. `contracts/mcp-tools.md`: URL ví dụ `.mcp.json` đổi sang `http://localhost:8083/mcp`.
+
+## **2026-11-04** -- Playwright chỉ là công cụ phát triển (cần chỉnh kế hoạch khi duyệt lại)
+
+Chủ dự án chốt: Playwright và Trace Viewer chỉ dùng khi lập trình client để tìm lỗi UI, không phải tính năng cho người dùng ứng dụng. Đã sửa `SRS.md` (NFR-5), `PRD.md`, `ERD.md` (bỏ bảng `TEST_TRACE_ARTIFACT`), `AGENTS.md` (`trace: 'retain-on-failure'`). `Opus Architect` cần bỏ `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `gov_db` Phase 2 trong D1 khi duyệt lại kế hoạch.

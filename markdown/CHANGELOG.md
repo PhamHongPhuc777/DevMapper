@@ -53,3 +53,7 @@ Thêm `contracts/README.md` mô tả mục đích, danh sách file và quy tắc
 ## **2026-11-04** -- SRS: phạm vi Playwright chỉ là kiểm thử client của DevMapper
 
 `SRS.md`: bỏ Playwright khỏi phạm vi sản phẩm, vai trò Platform Admin và FR-4 (FR-4 chỉ còn báo cáo bảo mật Claude Security); thêm NFR-5 nêu rõ Playwright chỉ kiểm thử client frontend của DevMapper, báo cáo là artifact quy trình phát triển, không phải màn hình trong ứng dụng.
+
+## **2026-11-04** -- Căn chỉnh Playwright thành công cụ phát triển
+
+`PRD.md`: bỏ các tính năng, vai trò và user story xem Playwright Trace trong ứng dụng; mục 5.4 chỉ còn Bảo mật Claude Security; dòng Playwright và MinIO ở Mục 7 chỉnh lại. `ERD.md`: bỏ bảng `TEST_TRACE_ARTIFACT` khỏi sơ đồ và bảng phân bổ schema. `AGENTS.md` Mục 3: Playwright dùng `trace: 'retain-on-failure'`, báo cáo của test lỗi lưu ở `testing/versions/`.

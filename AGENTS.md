@@ -109,7 +109,7 @@ Mọi coding agent (`Opus Architect` khi thiết kế/review và `Sonnet Executo
 - **Kỹ năng `Graphify` (Cấu trúc hóa Đồ thị):** Bắt buộc sử dụng khi phân tích kiến trúc hoặc thiết kế luồng dữ liệu. `Opus Architect` dùng kỹ năng này để xuất các bản nháp kiến trúc dưới dạng sơ đồ Mermaid.js cho Chủ dự án duyệt nhanh. 
 - **Kiểm thử Tích lũy `Playwright` (kèm kiểm tra `axe`):**
   - Chạy nhanh Unit Test/Lint của đúng module vừa sửa ở các bước nhỏ.
-  - Khi hoàn tất tính năng, chạy bộ kiểm thử E2E tích lũy tăng dần (toàn bộ test cũ + mới) kết hợp kiểm tra `axe` và ngân sách dung lượng bundle, xuất bản báo cáo/trace lưu vào `testing/versions/`.
+  - Khi hoàn tất tính năng, chạy bộ kiểm thử E2E tích lũy tăng dần (toàn bộ test cũ + mới) kết hợp kiểm tra `axe` và ngân sách dung lượng bundle, cấu hình Playwright `trace: 'retain-on-failure'`, báo cáo/trace của test lỗi lưu vào `testing/versions/` để dev mở bằng Trace Viewer tìm lỗi (công cụ phát triển, không phải tính năng cho người dùng).
 - **CI/CD Tự phục hồi qua `GitHub Actions` với Incremental Build:**
   - Tự động kết nối và kích hoạt workflow CI/CD sử dụng máy chủ Runner tự host.
   - **Cơ chế Build Gia tăng (Incremental Build & Auto-Fix Loop):** Cấu hình công cụ build của dự án (`Gradle, Vite, Bun`) với cờ biên dịch gia tăng (incremental/cache) và nén tối ưu (`Minify JS/CSS`, `Chunk splitting`) để tránh build lại toàn bộ các module không đổi.
