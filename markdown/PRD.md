@@ -109,32 +109,34 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 
 ## 7. Đề xuất công nghệ
 
-| Lớp | Công nghệ | Lý do / Ghi chú |
-|---|---|---|
-| Frontend | React + Vite | SPA nội bộ tốc độ cao, kết hợp TypeScript đảm bảo an toàn kiểu dữ liệu khi xử lý cấu trúc đồ thị phức tạp |
-| Đồ thị kiến trúc | React Flow (`@xyflow/react`) + ELKjs | Vẽ bản đồ kiến trúc node-edge tương tác đa tầng; kết hợp thuật toán ELKjs để tự động tính toán tọa độ bố cục đồ thị không bị chồng chéo |
-| Biểu đồ thống kê | Recharts + Mermaid.js | Recharts vẽ biểu đồ thống kê sức khỏe kiến trúc, số lượng test case tích lũy và lỗ hổng Claude Security; Mermaid.js xuất sơ đồ văn bản cho tài liệu Markdown |
-| Form & State | React Hook Form + Zustand | Quản lý trạng thái bộ lọc đồ thị (theo nhánh, giao thức, mức độ rủi ro) và các biểu mẫu cấu hình hệ thống |
-| Styling | TailwindCSS + ShadCN | Thiết kế giao diện hiện đại, nhẹ, hỗ trợ TypeScript thuần và tuân thủ quy tắc đóng gói component dùng chung tại `client/src/lib/` |
-| Package manager & Runtime (frontend) | Bun | Công cụ chính của toàn bộ frontend: cài gói (`bun install`, lockfile `bun.lock`), chạy dev server và script (`bun run dev`, `bunx --bun vite`), thay npm/Node cho thao tác hằng ngày. Giữ Node LTS (máy hiện có v24) cài sẵn làm phương án dự phòng cho công cụ chưa chạy ổn trên Bun (kiểm tra khi khởi tạo client, vd: Playwright, Dependency-Cruiser) |
-| Linter kiến trúc | Dependency-Cruiser | Khóa cứng kiến trúc phân tầng đơn bước ở client (`Page -> Component -> Hook -> API`), chạy qua `bunx` trong bước lint |
-| Cache trạng thái UI | TanStack Query | Tự động hóa việc tải dữ liệu đồ thị, lưu bộ nhớ đệm phía client và đồng bộ trạng thái bản đồ từ API máy chủ |
-| Kiểm thử E2E | Playwright (kèm Trace Viewer) | Chạy kiểm thử E2E tích lũy tăng dần trên trình duyệt thật sau mỗi thay đổi code; trích xuất gói HTML Trace Viewer lưu theo từng version trong thư mục `testing/` |
-| Bảo mật & Rà soát | Claude Security (plugin `claude-security`) | Quét lỗ hổng tĩnh trong phiên Claude Code ở mức effort chọn trước, mỗi phát hiện được kiểm chứng chéo trước khi vào báo cáo (`CLAUDE-SECURITY-RESULTS.md/.jsonl/.sarif`); chạy sau mỗi đợt cập nhật mã nguồn |
-| Backend | Spring Boot (Microservices) | Tách thành 4 Core Microservices (`scanner-service`, `topology-service`, `ai-mcp-service`, `quality-gov-service`) và 1 API Gateway, giúp tối ưu cô lập lỗi và quản lý bởi đội ngũ AI Agent |
-| Phân tích mã tĩnh | Tree-sitter + OpenAPI/AsyncAPI Parser | Phân tích cây cú pháp trừu tượng (AST) đa ngôn ngữ và đọc các file đặc tả để tự động phát hiện điểm gọi API/Kafka từ source code |
-| Bảo mật tầng API | Spring Security | Xác thực JWT do Keycloak phát hành cho mọi request; kiểm soát phân quyền RBAC chặt chẽ ngay tại tầng API của API Gateway và các microservices |
-| Build tool & CI/CD | Gradle + GitHub Actions (tự host trên PC) | Hỗ trợ Incremental Build (biên dịch gia tăng) kết hợp Runner tự host, giúp AI Agent tự động vá lỗi (auto-fix) và build lại cực nhanh |
-| Database | PostgreSQL (4 Schemas riêng biệt) | Tự host 1 container PostgreSQL trên PC nhưng chia 4 schema (`scanner_db`, `topology_db`, `ai_db`, `gov_db`) đảm bảo quy tắc Database-per-Service của Microservices |
-| ORM & Migration | MyBatis + Flyway | Kiểm soát tối ưu các câu truy vấn SQL đệ quy phức tạp (`WITH RECURSIVE`) trên đồ thị thông qua MyBatis; quản lý migration độc lập cho từng schema |
-| Cache hệ thống | Redis (tự host trên PC) | Lưu bộ nhớ đệm cho đồ thị tổng (`global-graph`), kết quả truy vấn MCP và quản lý giới hạn tần suất gọi API (Rate Limiting) |
-| Luồng sự kiện | Apache Kafka KRaft (tự host trên PC) | Giao tiếp bất đồng bộ giữa các microservices nội bộ (vd: `scanner-service` quét xong → `topology-service`); CI bên ngoài chỉ gọi Ingestion API, không truy cập Kafka trực tiếp |
-| IAM / SSO | Keycloak (tự host trên PC) | Quản lý định danh tập trung, Realm, phân quyền người dùng và phát hành token chuẩn OIDC/OAuth2 cho cả Web App lẫn VPN |
-| Truy cập từ xa (tùy chọn, Phase 2+) | NetBird | MVP chạy toàn bộ trên laptop, mọi cổng bind `127.0.0.1` nên không lộ ra internet; chỉ thêm NetBird (WireGuard Zero-Trust) khi cần truy cập từ thiết bị khác |
-| Lưu trữ đối tượng | MinIO (tự host trên PC) | Lưu trữ qua giao thức S3 các file kết quả quét AST JSON, báo cáo chi tiết của Claude Security và toàn bộ gói tài nguyên HTML Trace Viewer của Playwright |
-| Email / SMTP | Brevo | Kết nối với Keycloak và Backend qua SMTP để gửi email xác thực tài khoản và cảnh báo khi phát hiện thay đổi kiến trúc gây lỗi |
-| Đa mô hình AI & MCP | Claude, ChatGPT, Gemini, Grok + MCP SDK | Kết nối cả 4 nền tảng AI lớn phục vụ phân tích tác động kiến trúc; cung cấp MCP Server chuẩn hóa ngữ cảnh cho AI Coding Agent |
-| Reverse Proxy / TLS (tùy chọn, Phase 2+) | Traefik | Chỉ cần khi mở truy cập từ xa: định tuyến theo tên miền, chứng chỉ TLS tự động; MVP gọi thẳng `localhost` |
+| Lớp | Công nghệ | Lý do / Ghi chú | Triển khai (Local / Cloud) |
+|---|---|---|---|
+| Frontend | React + Vite | SPA nội bộ tốc độ cao, kết hợp TypeScript đảm bảo an toàn kiểu dữ liệu khi xử lý cấu trúc đồ thị phức tạp | Client (trình duyệt); dev server chạy local |
+| Đồ thị kiến trúc | React Flow (`@xyflow/react`) + ELKjs | Vẽ bản đồ kiến trúc node-edge tương tác đa tầng; kết hợp thuật toán ELKjs để tự động tính toán tọa độ bố cục đồ thị không bị chồng chéo | Client (trình duyệt) |
+| Biểu đồ thống kê | Recharts + Mermaid.js | Recharts vẽ biểu đồ thống kê sức khỏe kiến trúc, số lượng test case tích lũy và lỗ hổng Claude Security; Mermaid.js xuất sơ đồ văn bản cho tài liệu Markdown | Client (trình duyệt) |
+| Form & State | React Hook Form + Zustand | Quản lý trạng thái bộ lọc đồ thị (theo nhánh, giao thức, mức độ rủi ro) và các biểu mẫu cấu hình hệ thống | Client (trình duyệt) |
+| Styling | TailwindCSS + ShadCN | Thiết kế giao diện hiện đại, nhẹ, hỗ trợ TypeScript thuần và tuân thủ quy tắc đóng gói component dùng chung tại `client/src/lib/` | Client; build chạy local |
+| Package manager & Runtime | Bun | Công cụ chính của toàn bộ frontend: cài gói (`bun install`, lockfile `bun.lock`), chạy dev server và script (`bun run dev`, `bunx --bun vite`), thay npm/Node cho thao tác hằng ngày. Giữ Node LTS (máy hiện có v24) cài sẵn làm phương án dự phòng cho công cụ chưa chạy ổn trên Bun (kiểm tra khi khởi tạo client, vd: Playwright, Dependency-Cruiser) | Local (công cụ phát triển) |
+| Linter kiến trúc | Dependency-Cruiser | Khóa cứng kiến trúc phân tầng đơn bước ở client (`Page -> Component -> Hook -> API`), chạy qua `bunx` trong bước lint | Local (lint, CI) |
+| Cache trạng thái UI | TanStack Query | Tự động hóa việc tải dữ liệu đồ thị, lưu bộ nhớ đệm phía client và đồng bộ trạng thái bản đồ từ API máy chủ | Client (trình duyệt) |
+| Kiểm thử E2E | Playwright (kèm Trace Viewer) | Chạy kiểm thử E2E tích lũy tăng dần trên trình duyệt thật sau mỗi thay đổi code; trích xuất gói HTML Trace Viewer lưu theo từng version trong thư mục `testing/` | Local (laptop/runner); báo cáo có thể sao lưu lên cloud |
+| Bảo mật & Rà soát | Claude Security (plugin `claude-security`) | Quét lỗ hổng tĩnh trong phiên Claude Code ở mức effort chọn trước, mỗi phát hiện được kiểm chứng chéo trước khi vào báo cáo (`CLAUDE-SECURITY-RESULTS.md/.jsonl/.sarif`); chạy sau mỗi đợt cập nhật mã nguồn | Cloud (model Claude chạy qua Claude Code, mã nguồn được gửi tới API Anthropic); công cụ chạy trong phiên local |
+| Backend | Spring Boot (Microservices) | Tách thành 4 Core Microservices (`scanner-service`, `topology-service`, `ai-mcp-service`, `quality-gov-service`) và 1 API Gateway, giúp tối ưu cô lập lỗi và quản lý bởi đội ngũ AI Agent | Local (container trên laptop) |
+| Phân tích mã tĩnh | Tree-sitter + OpenAPI/AsyncAPI Parser | Phân tích cây cú pháp trừu tượng (AST) đa ngôn ngữ và đọc các file đặc tả để tự động phát hiện điểm gọi API/Kafka từ source code | Local (scanner-cli trên runner CI tự host) |
+| Bảo mật tầng API | Spring Security | Xác thực JWT do Keycloak phát hành cho mọi request; kiểm soát phân quyền RBAC chặt chẽ ngay tại tầng API của API Gateway và các microservices | Local (trong từng service) |
+| Build tool & CI/CD | Gradle + GitHub Actions (tự host trên PC) | Hỗ trợ Incremental Build (biên dịch gia tăng) kết hợp Runner tự host, giúp AI Agent tự động vá lỗi (auto-fix) và build lại cực nhanh | Local (runner tự host); điều phối workflow trên GitHub (cloud) |
+| Database | PostgreSQL (4 Schemas riêng biệt) | Tự host 1 container PostgreSQL trên PC nhưng chia 4 schema (`scanner_db`, `topology_db`, `ai_db`, `gov_db`) đảm bảo quy tắc Database-per-Service của Microservices | Local (dữ liệu nhạy cảm); sao lưu mã hóa lên cloud |
+| ORM & Migration | MyBatis + Flyway | Kiểm soát tối ưu các câu truy vấn SQL đệ quy phức tạp (`WITH RECURSIVE`) trên đồ thị thông qua MyBatis; quản lý migration độc lập cho từng schema | Local (thư viện trong service) |
+| Cache hệ thống | Redis (tự host trên PC) | Lưu bộ nhớ đệm cho đồ thị tổng (`global-graph`), kết quả truy vấn MCP và quản lý giới hạn tần suất gọi API (Rate Limiting) | Local (cache tái tạo được) |
+| Luồng sự kiện | Apache Kafka KRaft (tự host trên PC) | Giao tiếp bất đồng bộ giữa các microservices nội bộ (vd: `scanner-service` quét xong → `topology-service`); CI bên ngoài chỉ gọi Ingestion API, không truy cập Kafka trực tiếp | Local (không đưa lên cloud; cân nhắc bỏ/thay ở MVP để tiết kiệm RAM) |
+| IAM / SSO | Keycloak (tự host trên PC) | Quản lý định danh tập trung, Realm, phân quyền người dùng và phát hành token chuẩn OIDC/OAuth2 cho cả Web App lẫn VPN | Local; hoặc dịch vụ định danh cloud nếu RAM không đủ (Phase 2) |
+| Truy cập từ xa (tùy chọn, Phase 2+) | NetBird Cloud | Máy chủ điều phối do NetBird vận hành nên không cần VPS; laptop là một thiết bị trong mạng và người kiểm thử cài NetBird client để truy cập. MVP vẫn bind `127.0.0.1`; khi bật truy cập từ xa thì xuất bản thêm cổng trên địa chỉ NetBird (WireGuard Zero-Trust). Gói miễn phí giới hạn số người dùng, kiểm tra lại khi triển khai | Cloud (NetBird Cloud) |
+| Lưu trữ đối tượng | MinIO (tự host trên PC) | Lưu trữ qua giao thức S3 các file kết quả quét AST JSON, báo cáo chi tiết của Claude Security và toàn bộ gói tài nguyên HTML Trace Viewer của Playwright | Local (dữ liệu nhạy cảm); sao lưu mã hóa lên cloud |
+| Email / SMTP | Brevo | Kết nối với Keycloak và Backend qua SMTP để gửi email xác thực tài khoản và cảnh báo khi phát hiện thay đổi kiến trúc gây lỗi | Cloud (dịch vụ SMTP bên ngoài) |
+| Đa mô hình AI & MCP | Claude, ChatGPT, Gemini, Grok + MCP SDK | Kết nối cả 4 nền tảng AI lớn phục vụ phân tích tác động kiến trúc; cung cấp MCP Server chuẩn hóa ngữ cảnh cho AI Coding Agent | Cloud (API của các nhà cung cấp AI); MCP Server chạy local |
+| Reverse Proxy / TLS (tùy chọn, Phase 2+) | Traefik | Chỉ cần khi mở truy cập từ xa: định tuyến theo tên miền, chứng chỉ TLS tự động; MVP gọi thẳng `localhost` | Local, chỉ khi cần (Phase 2+) |
+
+_Local = container/công cụ chạy trên laptop; Cloud = dịch vụ bên ngoài; Client = chạy trong trình duyệt của người dùng._
 
 ## 8. Rủi ro và Giả định
 

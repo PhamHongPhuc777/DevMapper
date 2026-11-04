@@ -33,3 +33,11 @@ Cài `claude-security@claude-plugins-official`. `AGENTS.md` Mục 3–4, `CLAUDE
 ## **2026-11-04** -- Bỏ Lighthouse khỏi cổng bắt buộc; chạy local không VPS
 
 `AGENTS.md`: tiêu chí 18 đổi thành Accessibility & bundle budget (`axe` + ngân sách bundle), Lighthouse chỉ thủ công; bỏ Lighthouse khỏi Mục 3 và `TESTING.md`; bối cảnh dự án đổi từ "qua VPN NetBird" sang "qua localhost". `PRD.md`/`SRS.md`: bỏ VPS, NetBird và Traefik thành tùy chọn Phase 2, mọi cổng bind `127.0.0.1`, thêm rủi ro phần cứng laptop. `PLAN.md` và `SETUP.md` ghi các mục cần chỉnh và việc cần làm trên máy.
+
+## **2026-11-04** -- PRD: đổi nhãn dòng Bun
+
+`PRD.md` Mục 7: dòng "Package manager & Runtime (frontend)" đổi thành "Package manager & Runtime"; nội dung dòng vẫn nói Bun dùng cho frontend.
+
+## **2026-11-04** -- PRD: cột Triển khai (Local / Cloud) và NetBird Cloud
+
+`PRD.md` Mục 7: thêm cột "Triển khai (Local / Cloud)" cho từng dòng công nghệ; dòng NetBird đổi sang NetBird Cloud (không cần VPS). `SRS.md` Mục 2.2 cập nhật tương ứng.
