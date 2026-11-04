@@ -22,3 +22,16 @@ Remote Control yêu cầu phiên nói chuyện trực tiếp với `api.anthropi
 Strix (pentest động, cần Docker + khóa LLM trả phí qua `STRIX_LLM`/`LLM_API_KEY`) tạm hoãn đến khi có service chạy được; CLI `strix` 1.7.0 vẫn còn cài trên máy (`uv tool uninstall strix-agent` để gỡ). Khóa API chưa được tạo.
 
 Chưa hoàn tất: Docker Desktop chưa chạy (cần cho Postgres/Redis/Kafka/MinIO khi bắt đầu code); `gradle` chưa có trên PATH (dùng Gradle wrapper khi khởi tạo service).
+
+## **2026-11-04** -- Chạy toàn bộ trên laptop (không VPS)
+
+Máy chủ: Razer Blade 14 (2016), i7-6700HQ 4 nhân/8 luồng, 16 GB RAM (không nâng cấp được), khoảng 430 GB ổ trống trên C: và D:.
+
+Cần làm một lần (do Chủ dự án, chưa được thực hiện hộ):
+
+- Giới hạn bộ nhớ vùng Docker/WSL2: tạo `C:\Users\Admin\.wslconfig` với `[wsl2]` và `memory=6GB`, rồi chạy `wsl --shutdown`.
+- Tắt chế độ ngủ khi cắm điện và đặt "đóng nắp = không làm gì" (Remote Control và runner CI cần máy luôn thức).
+- Khởi động Docker Desktop trước khi chạy compose hoặc Testcontainers.
+- Luôn cắm sạc khi build dài để tránh giảm xung nhịp.
+
+Windows 10 đã hết hỗ trợ tiêu chuẩn từ tháng 10/2025: giữ mọi dịch vụ bind `127.0.0.1`, không mở cổng ra ngoài.

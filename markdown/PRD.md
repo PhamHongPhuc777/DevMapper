@@ -51,7 +51,7 @@
 | Lập trình viên / Developer (Fresher) | Xem sơ đồ kết nối giữa các microservice, tra cứu nhanh API contract, Kafka topic và luồng dữ liệu mà không cần mở từng repo |
 | Tác tử AI / AI Coding Agent (Claude, Codex) | Truy vấn đồ thị phụ thuộc và hợp đồng API qua giao thức MCP để hiểu ngữ cảnh đa repo trước khi thêm tính năng hoặc sửa lỗi |
 | Kiến trúc sư / Tech Lead | Phân tích bán kính ảnh hưởng (Impact Analysis) khi thay đổi API, phát hiện phụ thuộc vòng (circular dependencies) và đánh giá kiến trúc với sự hỗ trợ của 4 mô hình AI |
-| Quản trị hệ thống / Platform Admin | Quản lý cụm repo, cấu hình Keycloak IAM, kiểm soát mạng nội bộ NetBird, theo dõi lịch sử Playwright Trace HTML và báo cáo bảo mật Claude Security |
+| Quản trị hệ thống / Platform Admin | Quản lý cụm repo, cấu hình Keycloak IAM, kiểm soát truy cập mạng (localhost; NetBird khi mở truy cập từ xa), theo dõi lịch sử Playwright Trace HTML và báo cáo bảo mật Claude Security |
 
 ## 4. Công cụ tương đồng
 
@@ -87,7 +87,7 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 
 - [x] **[M]** Truy vấn bán kính ảnh hưởng (Blast Radius): chọn một API endpoint hoặc Kafka topic để liệt kê toàn bộ các upstream/downstream services bị tác động qua nhiều tầng
 - [x] **[M]** Cung cấp MCP Server (Model Context Protocol) tích hợp sẵn các tool (`get_service_topology`, `analyze_breaking_change`, `get_topic_subscribers`) cho Claude Code và Codex
-- [x] **[M]** Xuất gói ngữ cảnh kiến trúc rút gọn (`ai-architecture-context.json`) theo từng phạm vi tính năng, đính kèm làm artifact của CI để AI Agent ngoài mạng NetBird (vd: phiên cloud) vẫn đọc được mà không cần gọi MCP Server
+- [x] **[M]** Xuất gói ngữ cảnh kiến trúc rút gọn (`ai-architecture-context.json`) theo từng phạm vi tính năng, đính kèm làm artifact của CI để AI Agent ngoài máy local (vd: phiên cloud) vẫn đọc được mà không cần gọi MCP Server
 
 ### 5.4 Kiểm thử tích lũy Playwright Trace & Bảo mật Claude Security
 
@@ -116,7 +116,8 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 | Biểu đồ thống kê | Recharts + Mermaid.js | Recharts vẽ biểu đồ thống kê sức khỏe kiến trúc, số lượng test case tích lũy và lỗ hổng Claude Security; Mermaid.js xuất sơ đồ văn bản cho tài liệu Markdown |
 | Form & State | React Hook Form + Zustand | Quản lý trạng thái bộ lọc đồ thị (theo nhánh, giao thức, mức độ rủi ro) và các biểu mẫu cấu hình hệ thống |
 | Styling | TailwindCSS + ShadCN | Thiết kế giao diện hiện đại, nhẹ, hỗ trợ TypeScript thuần và tuân thủ quy tắc đóng gói component dùng chung tại `client/src/lib/` |
-| Runtime & Linter | Bun.js + Dependency-Cruiser | Dùng Bun làm package manager và trình chạy script tốc độ cao; dùng Dependency-Cruiser để khóa cứng kiến trúc phân tầng đơn bước ở client |
+| Package manager & Runtime (frontend) | Bun | Công cụ chính của toàn bộ frontend: cài gói (`bun install`, lockfile `bun.lock`), chạy dev server và script (`bun run dev`, `bunx --bun vite`), thay npm/Node cho thao tác hằng ngày. Giữ Node LTS (máy hiện có v24) cài sẵn làm phương án dự phòng cho công cụ chưa chạy ổn trên Bun (kiểm tra khi khởi tạo client, vd: Playwright, Dependency-Cruiser) |
+| Linter kiến trúc | Dependency-Cruiser | Khóa cứng kiến trúc phân tầng đơn bước ở client (`Page -> Component -> Hook -> API`), chạy qua `bunx` trong bước lint |
 | Cache trạng thái UI | TanStack Query | Tự động hóa việc tải dữ liệu đồ thị, lưu bộ nhớ đệm phía client và đồng bộ trạng thái bản đồ từ API máy chủ |
 | Kiểm thử E2E | Playwright (kèm Trace Viewer) | Chạy kiểm thử E2E tích lũy tăng dần trên trình duyệt thật sau mỗi thay đổi code; trích xuất gói HTML Trace Viewer lưu theo từng version trong thư mục `testing/` |
 | Bảo mật & Rà soát | Claude Security (plugin `claude-security`) | Quét lỗ hổng tĩnh trong phiên Claude Code ở mức effort chọn trước, mỗi phát hiện được kiểm chứng chéo trước khi vào báo cáo (`CLAUDE-SECURITY-RESULTS.md/.jsonl/.sarif`); chạy sau mỗi đợt cập nhật mã nguồn |
@@ -129,17 +130,17 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 | Cache hệ thống | Redis (tự host trên PC) | Lưu bộ nhớ đệm cho đồ thị tổng (`global-graph`), kết quả truy vấn MCP và quản lý giới hạn tần suất gọi API (Rate Limiting) |
 | Luồng sự kiện | Apache Kafka KRaft (tự host trên PC) | Giao tiếp bất đồng bộ giữa các microservices nội bộ (vd: `scanner-service` quét xong → `topology-service`); CI bên ngoài chỉ gọi Ingestion API, không truy cập Kafka trực tiếp |
 | IAM / SSO | Keycloak (tự host trên PC) | Quản lý định danh tập trung, Realm, phân quyền người dùng và phát hành token chuẩn OIDC/OAuth2 cho cả Web App lẫn VPN |
-| VPN nội bộ | NetBird (tự host trên VPS riêng) | Thiết lập mạng lưới WireGuard Zero-Trust kết nối từ VPS riêng về máy chủ PC; bảo vệ toàn bộ cổng dịch vụ nội bộ không lộ ra internet công khai |
+| Truy cập từ xa (tùy chọn, Phase 2+) | NetBird | MVP chạy toàn bộ trên laptop, mọi cổng bind `127.0.0.1` nên không lộ ra internet; chỉ thêm NetBird (WireGuard Zero-Trust) khi cần truy cập từ thiết bị khác |
 | Lưu trữ đối tượng | MinIO (tự host trên PC) | Lưu trữ qua giao thức S3 các file kết quả quét AST JSON, báo cáo chi tiết của Claude Security và toàn bộ gói tài nguyên HTML Trace Viewer của Playwright |
 | Email / SMTP | Brevo | Kết nối với Keycloak và Backend qua SMTP để gửi email xác thực tài khoản và cảnh báo khi phát hiện thay đổi kiến trúc gây lỗi |
 | Đa mô hình AI & MCP | Claude, ChatGPT, Gemini, Grok + MCP SDK | Kết nối cả 4 nền tảng AI lớn phục vụ phân tích tác động kiến trúc; cung cấp MCP Server chuẩn hóa ngữ cảnh cho AI Coding Agent |
-| Reverse Proxy / TLS | Traefik (tự host trên VPS riêng) | Định tuyến theo tên miền nội bộ, tự động cấp chứng chỉ Let's Encrypt qua DNS-01 và chỉ lắng nghe trên giao diện mạng riêng của NetBird |
+| Reverse Proxy / TLS (tùy chọn, Phase 2+) | Traefik | Chỉ cần khi mở truy cập từ xa: định tuyến theo tên miền, chứng chỉ TLS tự động; MVP gọi thẳng `localhost` |
 
 ## 8. Rủi ro và Giả định
 
 - **Giả định:** Các microservice trong hệ thống tuân thủ các mẫu giao tiếp tiêu chuẩn (REST/HTTP, gRPC, Kafka) hoặc khai báo biến môi trường nhất quán trong cấu hình repo.
-- **Rủi ro tài nguyên phần cứng trên PC:** Việc tự host đồng thời PostgreSQL, Redis, Kafka, Keycloak, MinIO và chạy Playwright trên cùng một PC có thể gây quá tải RAM → thiết lập giới hạn bộ nhớ (`mem_limit`) chặt chẽ cho từng container, dùng Kafka ở chế độ KRaft và chia nhỏ hệ thống thành Microservices để tối ưu.
+- **Rủi ro tài nguyên phần cứng trên PC:** Máy chủ là laptop Razer Blade 14 (2016: i7-6700HQ 4 nhân, 16 GB RAM, không nâng cấp được) nên phải giới hạn bộ nhớ vùng Docker (~6 GB qua `.wslconfig`), tắt chế độ ngủ khi cắm điện và không chạy E2E khi toàn bộ stack đang bật. Việc tự host đồng thời PostgreSQL, Redis, Kafka, Keycloak, MinIO và chạy Playwright trên cùng một PC có thể gây quá tải RAM → thiết lập giới hạn bộ nhớ (`mem_limit`) chặt chẽ cho từng container, dùng Kafka ở chế độ KRaft và chia nhỏ hệ thống thành Microservices để tối ưu.
 - **Rủi ro định tuyến đường truyền động (Dynamic URL resolution):** Một số lệnh gọi HTTP ghép chuỗi động lúc runtime có thể khó bóc tách 100% bằng phân tích tĩnh → cần kết hợp đọc cả file cấu hình (`application.yml`, `.env`) để nội suy đích đến.
-- **Rủi ro AI Agent ngoài mạng NetBird:** MCP Server chỉ truy cập được trong mạng NetBird nên các phiên AI Agent chạy ngoài mạng (vd: phiên cloud) không gọi được → phát hành `ai-architecture-context.json` làm artifact CI (mục 5.3) như đường dự phòng.
+- **Rủi ro AI Agent ngoài mạng NetBird:** MCP Server chạy trên laptop (localhost) nên các phiên AI Agent chạy ngoài máy (vd: phiên cloud) không gọi được → phát hành `ai-architecture-context.json` làm artifact CI (mục 5.3) như đường dự phòng.
 - **Giới hạn kiểm thử bảo mật:** Claude Security là phân tích tĩnh mã nguồn, không tấn công ứng dụng đang chạy → chưa có kiểm thử xâm nhập động; bù bằng Playwright E2E ở các luồng xác thực/phân quyền, và xem xét công cụ pentest động (vd: Strix, cần khóa LLM trả phí) ở giai đoạn sau.
-- **Rủi ro bảo mật mã nguồn:** Dữ liệu cấu trúc mã nguồn và báo cáo lỗ hổng từ Claude Security rất nhạy cảm → bắt buộc cô lập hoàn toàn sau lớp mạng VPN NetBird và kiểm soát quyền qua Keycloak.
+- **Rủi ro bảo mật mã nguồn:** Dữ liệu cấu trúc mã nguồn và báo cáo lỗ hổng từ Claude Security rất nhạy cảm → bắt buộc chỉ bind `127.0.0.1` (MVP), thêm NetBird khi mở truy cập từ xa, và kiểm soát quyền qua Keycloak.

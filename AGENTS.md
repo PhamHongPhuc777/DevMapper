@@ -73,7 +73,7 @@ Hệ thống Backend được xây dựng dựa trên kiến trúc **Microservic
 - **Đồng hóa mã nguồn UI ngoại lai:** Khi nạp các component từ nguồn ngoài (code snippet tĩnh, công cụ sinh UI), hệ thống không được để nguyên trạng. `Opus Architect` phải lên kế hoạch bóc tách các nguyên mẫu vào thư mục UI dùng chung, tạo pass-through, và tách logic state thành custom hook/composable trước khi cho phép `Sonnet Executor` tích hợp vào nhánh code chính.
 
 ### 2.3. Bảng kiểm 18 Tiêu chuẩn Tối ưu Hóa Bắt buộc (Mandatory Optimization Checklist)
-Mọi coding agent (`Opus Architect` khi thiết kế/review và `Sonnet Executor` khi viết code) phải chủ động rà soát 18 điểm tối ưu sau trong mỗi lần cập nhật codebase. Mục nào không phù hợp bối cảnh dự án (DevMapper là công cụ nội bộ tự host trên 1 PC, chỉ truy cập qua VPN NetBird — thường là Add CDN, Load balancer, Lighthouse) được phép ghi `N/A + lý do` trong `PLAN.md`; `Opus Architect` duyệt lý do, mục N/A đã duyệt không bị `[REJECTED]`:
+Mọi coding agent (`Opus Architect` khi thiết kế/review và `Sonnet Executor` khi viết code) phải chủ động rà soát 18 điểm tối ưu sau trong mỗi lần cập nhật codebase. Mục nào không phù hợp bối cảnh dự án (DevMapper là công cụ nội bộ tự host trên 1 PC, chỉ truy cập qua localhost — thường là Add CDN, Load balancer) được phép ghi `N/A + lý do` trong `PLAN.md`; `Opus Architect` duyệt lý do, mục N/A đã duyệt không bị `[REJECTED]`:
 
 #### A. Tầng Backend, API & Hạ tầng Mạng (Server, API & Network Layer)
 1. **Server-side caching (Bộ nhớ đệm phía máy chủ):** Áp dụng bộ nhớ đệm phân tán hoặc nội bộ (`Redis`) cho các dữ liệu cấu hình, phiên làm việc và trạng thái đọc thường xuyên để giảm tải xử lý lặp lại.
@@ -97,7 +97,7 @@ Mọi coding agent (`Opus Architect` khi thiết kế/review và `Sonnet Executo
 15. **Minify JS and CSS (Nén tối giản mã JS và CSS):** Cấu hình pipeline đóng gói sản phẩm (`Production Build`) luôn bật chế độ rút gọn mã nguồn (`Minification` bằng `esbuild`/`SWC`/`Terser` và `LightningCSS`/`cssnano`) kết hợp loại bỏ mã chết (`Tree-shaking`).
 16. **Defer non-critical scripts (Trì hoãn các kịch bản không thiết yếu):** Mọi script bên thứ ba, công cụ phân tích, hoặc tác vụ khởi tạo nền không phục vụ trực tiếp cho màn hình đầu tiên đều phải gắn thuộc tính `defer`/`async` hoặc lùi thời điểm nạp sau khi luồng giao diện chính đã tương tác được (`requestIdleCallback`).
 17. **Unused dependencies (Loại bỏ phụ thuộc dư thừa):** Trước khi kết thúc mỗi bản cập nhật, các agent phải kiểm tra và gỡ bỏ ngay các thư viện, gói cài đặt hoặc lệnh import không còn sử dụng trong file quản lý gói (`package.json`, `Cargo.toml`, `build.gradle`) để giữ kích thước bản dựng và bề mặt bảo mật ở mức tối thiểu.
-18. **Lighthouse audit (Kiểm toán hiệu năng Lighthouse):** Tích hợp bước đánh giá **Lighthouse** tự động để đo lường các chỉ số Web Vitals (Performance, Accessibility, Best Practices, LCP, CLS, TBT/INP); bất kỳ thay đổi giao diện nào làm tụt điểm hiệu năng dưới ngưỡng quy định đều phải được tối ưu lại trước khi phát hành.
+18. **Accessibility & bundle budget (Khả năng truy cập & ngân sách dung lượng):** Chạy kiểm tra `axe-core` trong bộ Playwright E2E và đặt ngân sách dung lượng bundle khi build; vi phạm thì tối ưu lại trước khi phát hành. Lighthouse chỉ chạy thủ công, tùy chọn, không phải cổng bắt buộc.
 
 ---
 
@@ -107,9 +107,9 @@ Mọi coding agent (`Opus Architect` khi thiết kế/review và `Sonnet Executo
 - **Kỹ năng `Claude Security` (plugin `claude-security`):** Sau mỗi bản cập nhật tính năng, chạy `/claude-security scan changes` (effort `high` cho thay đổi cỡ tính năng) để rà soát SQLi, SSRF, lỗi phân quyền, rò rỉ secret; báo cáo nằm ở `CLAUDE-SECURITY-<timestamp>/`. Đây là phân tích tĩnh trong phiên, không tấn công ứng dụng đang chạy. Gói phụ thuộc dư thừa (`Unused dependencies`) do `Sonnet Executor` dọn theo tiêu chí 17.
 - **Kỹ năng `Ponytail` (Tối giản code):** Plugin chế độ "lazy senior" (không có MCP Server): luôn ưu tiên tái sử dụng/stdlib trước khi viết mới. Ràng buộc kiến trúc (đường dẫn import, phân tầng, cấu trúc tách chunk) được đối chiếu bằng `dependency-cruiser` và `PLAN.md` TRƯỚC KHI sinh code.
 - **Kỹ năng `Graphify` (Cấu trúc hóa Đồ thị):** Bắt buộc sử dụng khi phân tích kiến trúc hoặc thiết kế luồng dữ liệu. `Opus Architect` dùng kỹ năng này để xuất các bản nháp kiến trúc dưới dạng sơ đồ Mermaid.js cho Chủ dự án duyệt nhanh. 
-- **Kiểm thử Tích lũy `Playwright` & `Lighthouse Audit`:**
+- **Kiểm thử Tích lũy `Playwright` (kèm kiểm tra `axe`):**
   - Chạy nhanh Unit Test/Lint của đúng module vừa sửa ở các bước nhỏ.
-  - Khi hoàn tất tính năng, chạy bộ kiểm thử E2E tích lũy tăng dần (toàn bộ test cũ + mới) kết hợp đo điểm hiệu năng **Lighthouse audit**, xuất bản báo cáo/trace lưu vào `testing/versions/`.
+  - Khi hoàn tất tính năng, chạy bộ kiểm thử E2E tích lũy tăng dần (toàn bộ test cũ + mới) kết hợp kiểm tra `axe` và ngân sách dung lượng bundle, xuất bản báo cáo/trace lưu vào `testing/versions/`.
 - **CI/CD Tự phục hồi qua `GitHub Actions` với Incremental Build:**
   - Tự động kết nối và kích hoạt workflow CI/CD sử dụng máy chủ Runner tự host.
   - **Cơ chế Build Gia tăng (Incremental Build & Auto-Fix Loop):** Cấu hình công cụ build của dự án (`Gradle, Vite, Bun`) với cờ biên dịch gia tăng (incremental/cache) và nén tối ưu (`Minify JS/CSS`, `Chunk splitting`) để tránh build lại toàn bộ các module không đổi.
@@ -124,7 +124,7 @@ Mọi coding agent (`Opus Architect` khi thiết kế/review và `Sonnet Executo
 - **Đánh số thứ tự từng bước (`// 1. ...`, `// 2. ...`):** Bắt buộc áp dụng cho mọi phương thức xử lý logic đa bước ở tầng Service phía Server và các thuật toán nghiệp vụ phức tạp phía Client.
 - **Tách biệt các File Lịch sử trong `markdown/`:**
   1. `CHANGELOG.md`: Nhật ký thay đổi, giải pháp kỹ thuật và các hạng mục tối ưu hiệu năng đã áp dụng.
-  2. `TESTING.md`: Lịch sử số lượng test case tích lũy, điểm số **Lighthouse audit**, đường dẫn bản báo cáo kiểm thử và kết quả rà soát từ **Claude Security**.
+  2. `TESTING.md`: Lịch sử số lượng test case tích lũy, kết quả `axe` và dung lượng bundle, đường dẫn bản báo cáo kiểm thử và kết quả rà soát từ **Claude Security**.
   3. `PLAN.md`: Kế hoạch nghiên cứu của `Opus Architect` và toàn bộ lịch sử các prompt qua mỗi đoạn chat bong bóng.
   4. `SETUP.md`: Cập nhật khi có thay đổi lớn về cấu hình hạ tầng (Load balancer, CDN, Redis Cache, DB Connection Pool) hoặc môi trường.
   - Mọi mục ghi đều dùng tiêu đề cấp 2: `## **YYYY-MM-DD** -- Tiêu đề ngắn gọn`, cách 1 dòng trống trước khi viết nội dung ở cột 0.

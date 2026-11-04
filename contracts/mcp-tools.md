@@ -9,10 +9,10 @@
 - Lỗi nghiệp vụ (group/service/topic không tồn tại, input sai) trả `CallToolResult` với `isError: true` và text ngắn; không ném exception giao thức.
 - Giới hạn: mọi danh sách có `limit` (mặc định 100, tối đa 500) và cờ `truncated`.
 
-Ví dụ cấu hình Claude Code (`.mcp.json` của repo người dùng):
+Ví dụ cấu hình Claude Code (`.mcp.json` của repo người dùng; MVP chỉ gọi được từ chính laptop vì cổng bind `127.0.0.1`, phiên ngoài máy dùng `ai-architecture-context.json`):
 
 ```json
-{ "mcpServers": { "devmapper": { "type": "http", "url": "https://devmapper.internal/mcp",
+{ "mcpServers": { "devmapper": { "type": "http", "url": "http://localhost:8083/mcp",
   "headers": { "Authorization": "Bearer ${DEVMAPPER_MCP_TOKEN}" } } } }
 ```
 

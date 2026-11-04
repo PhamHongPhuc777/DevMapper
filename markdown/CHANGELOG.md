@@ -25,3 +25,11 @@ Thêm `.claude/settings.json` (hook `SubagentStart`/`SubagentStop`), `.claude/ho
 ## **2026-11-03** -- Thay Strix bằng Claude Security
 
 Cài `claude-security@claude-plugins-official`. `AGENTS.md` Mục 3–4, `CLAUDE.md`, skill `devmapper-orchestrator`, `PRD.md`, `SRS.md`, `ERD.md` đổi từ Strix sang Claude Security; bảng `STRIX_SECURITY_REPORT` đổi thành `SECURITY_REPORT`. Thêm rủi ro "chưa có pentest động" vào `PRD.md` Mục 8. `SETUP.md` ghi rõ Headroom không được đặt `ANTHROPIC_BASE_URL` để giữ Remote Control.
+
+## **2026-11-03** -- PRD: Bun là package manager và runtime chính của frontend
+
+`PRD.md` Mục 7: tách dòng "Runtime & Linter" thành "Package manager & Runtime (frontend)" (Bun, Node LTS dự phòng) và "Linter kiến trúc" (Dependency-Cruiser).
+
+## **2026-11-04** -- Bỏ Lighthouse khỏi cổng bắt buộc; chạy local không VPS
+
+`AGENTS.md`: tiêu chí 18 đổi thành Accessibility & bundle budget (`axe` + ngân sách bundle), Lighthouse chỉ thủ công; bỏ Lighthouse khỏi Mục 3 và `TESTING.md`; bối cảnh dự án đổi từ "qua VPN NetBird" sang "qua localhost". `PRD.md`/`SRS.md`: bỏ VPS, NetBird và Traefik thành tùy chọn Phase 2, mọi cổng bind `127.0.0.1`, thêm rủi ro phần cứng laptop. `PLAN.md` và `SETUP.md` ghi các mục cần chỉnh và việc cần làm trên máy.

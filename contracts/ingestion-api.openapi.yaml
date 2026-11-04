@@ -4,12 +4,13 @@ info:
   version: 1.0.0
   description: |
     API của scanner-service. Ba nhóm, mỗi nhóm một cơ chế xác thực:
-    - `ingest` (công khai qua reverse proxy): CI gửi manifest, tải ai-architecture-context.json. Bearer Ingestion Token (mỗi repo 1 token).
-    - `admin` (chỉ nội bộ): quản lý System Group, Repository, cấp/xoay token. Bearer DEVMAPPER_ADMIN_TOKEN (MVP, thay bằng Keycloak ở Phase 2).
-    - `internal` (chỉ mạng docker): topology-service lấy manifest gốc. Header X-Internal-Token.
-    Lỗi trả theo RFC 9457 (application/problem+json). Reverse proxy chỉ được mở `/api/v1/ingest/**`.
+    - `ingest`: CI (runner tự host trên cùng laptop) gửi manifest, tải ai-architecture-context.json. Bearer Ingestion Token (mỗi repo 1 token).
+    - `admin`: quản lý System Group, Repository, cấp/xoay token. Bearer DEVMAPPER_ADMIN_TOKEN (MVP, thay bằng Keycloak ở Phase 2).
+    - `internal`: topology-service lấy manifest gốc qua mạng docker. Header X-Internal-Token.
+    Lỗi trả theo RFC 9457 (application/problem+json). MVP không có reverse proxy: cổng compose chỉ bind 127.0.0.1, không mở ra mạng ngoài; ba nhóm phân tách bằng cơ chế xác thực. Khi thêm Traefik/NetBird (tùy chọn, Phase 2) chỉ được mở `/api/v1/ingest/**`.
 servers:
-  - url: https://devmapper.internal
+  - url: http://localhost:8081
+    description: scanner-service trên laptop (MVP, bind 127.0.0.1)
 tags:
   - name: ingest
   - name: admin

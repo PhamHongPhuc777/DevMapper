@@ -45,19 +45,19 @@ Hệ thống tự động thu thập siêu dữ liệu kiến trúc từ nhiều
 - **Lập trình viên (Developer / Fresher):** Tra cứu sơ đồ kiến trúc, điểm cuối API, luồng sự kiện Kafka và phụ thuộc dịch vụ.
 - **Tác tử AI (AI Coding Agent):** Truy vấn ngữ cảnh kiến trúc đa repo qua giao thức MCP hoặc REST API để hỗ trợ viết code và sửa lỗi liên repo.
 - **Trưởng nhóm kỹ thuật (Tech Lead / Architect):** Giám sát thay đổi kiến trúc giữa các phiên bản, thực hiện phân tích tác động cùng 4 mô hình AI (Claude, ChatGPT, Gemini, Grok).
-- **Quản trị hệ thống (Platform Admin):** Quản lý người dùng/phân quyền qua Keycloak, giám sát kết nối NetBird, kiểm tra lịch sử Playwright Trace HTML và xử lý cảnh báo bảo mật từ Claude Security.
+- **Quản trị hệ thống (Platform Admin):** Quản lý người dùng/phân quyền qua Keycloak, giám sát truy cập mạng, kiểm tra lịch sử Playwright Trace HTML và xử lý cảnh báo bảo mật từ Claude Security.
 
 ## 2. Mô tả tổng quan
 
 ### 2.1 Bối cảnh sản phẩm
 
-DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Developer Platform module), không mở truy cập trực tiếp ra internet công khai. Toàn bộ các dịch vụ dữ liệu và ứng dụng được tự vận hành (self-hosted) trên hạ tầng PC cá nhân, kết nối an toàn thông qua máy chủ điều phối VPN NetBird đặt trên VPS riêng.
+DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Developer Platform module), không mở truy cập trực tiếp ra internet công khai. Toàn bộ các dịch vụ dữ liệu và ứng dụng được tự vận hành (self-hosted) trên một laptop duy nhất (MVP không dùng VPS), mọi cổng bind `127.0.0.1`; truy cập từ xa bằng NetBird là tùy chọn từ Phase 2.
 
 ### 2.2 Giả định và ràng buộc
 
 - Hệ thống Backend ứng dụng kiến trúc **Microservices** (gồm API Gateway, Scanner Service, Topology Service, AI-MCP Service, Quality-Gov Service) viết bằng Java (Spring Boot, MyBatis). Frontend phát triển bằng TypeScript/React.
 - Toàn bộ các thành phần hạ tầng gồm **PostgreSQL, Redis, Apache Kafka, Keycloak, và MinIO** được đóng gói container và tự host trực tiếp trên PC.
-- **NetBird** được tự host trên một VPS riêng biệt có IP tĩnh làm điểm trung chuyển định tuyến WireGuard cho PC và các thiết bị truy cập.
+- **NetBird** và **Traefik** là tùy chọn từ Phase 2 (cần VPS hoặc dịch vụ ngoài), chỉ thêm khi cần truy cập từ xa; MVP không phụ thuộc vào chúng.
 - Quá trình phát triển tuân thủ nghiêm ngặt quy trình điều phối đa tác tử (`Harness`), tra cứu tài liệu thời gian thực (`Context7`), rà soát bảo mật (`Claude Security`) và kiểm thử hồi quy tích lũy (`Playwright`) quy định tại `AGENTS.md`.
 
 ## 3. Yêu cầu chức năng
@@ -93,7 +93,7 @@ DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Develope
 ### FR-5: Xác thực tập trung Keycloak và phân quyền RBAC
 
 - Đăng nhập tập trung qua **Keycloak** tự host trên PC (chuẩn OIDC/OAuth2 PKCE).
-- Đồng bộ trạng thái người dùng giữa Keycloak, cơ sở dữ liệu nội bộ và hệ thống VPN NetBird.
+- Đồng bộ trạng thái người dùng giữa Keycloak, cơ sở dữ liệu nội bộ và (khi có) hệ thống VPN NetBird.
 - Phân quyền theo vai trò (RBAC), kiểm tra bắt buộc tại tầng bộ lọc bảo mật của API Gateway và từng Microservice.
 - Sử dụng dịch vụ SMTP của **Brevo** qua Keycloak để gửi email vòng đời tài khoản.
 
@@ -106,8 +106,8 @@ DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Develope
 
 ### NFR-1: Bảo mật và cô lập mạng
 
-- Toàn bộ kết nối sử dụng TLS thông qua reverse proxy **Traefik** với chứng chỉ Let's Encrypt cấp phát tự động.
-- **Cô lập mạng Zero-Trust:** Các dịch vụ tự host trên PC không mở port public. Mọi truy cập vào DevMapper, Keycloak, MinIO, PostgreSQL đều đi qua mạng ảo **NetBird** (100.64.0.0/10). Traefik chỉ bind cổng `443` vào dải IP NetBird.
+- MVP chạy trên `localhost`; TLS qua reverse proxy **Traefik** (Let's Encrypt) chỉ cần khi mở truy cập từ xa (Phase 2).
+- **Cô lập mạng:** Các dịch vụ không mở port public; mọi cổng bind `127.0.0.1` (MVP). Khi mở truy cập từ xa, mọi truy cập đi qua mạng ảo **NetBird** (100.64.0.0/10) và Traefik chỉ bind cổng `443` vào dải IP NetBird.
 - Mã nguồn và cấu hình không chứa secret cứng; mọi đợt cập nhật phải vượt qua cổng kiểm tra Claude Security.
 
 ### NFR-2: Hiệu năng và tối ưu tài nguyên tự host
