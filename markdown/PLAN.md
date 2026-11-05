@@ -286,3 +286,7 @@ Sửa tại chỗ mục "Kế hoạch MVP chính thức" theo quyết định h�
 ## **2026-11-04** -- Playwright chỉ là công cụ phát triển (cần chỉnh kế hoạch khi duyệt lại)
 
 Chủ dự án chốt: Playwright và Trace Viewer chỉ dùng khi lập trình client để tìm lỗi UI, không phải tính năng cho người dùng ứng dụng. Đã sửa `SRS.md` (NFR-5), `PRD.md`, `ERD.md` (bỏ bảng `TEST_TRACE_ARTIFACT`), `AGENTS.md` (`trace: 'retain-on-failure'`). `Opus Architect` cần bỏ `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `gov_db` Phase 2 trong D1 khi duyệt lại kế hoạch.
+
+## **2026-11-05** -- Claude Security chỉ là công cụ lập trình (cần chỉnh kế hoạch khi duyệt lại)
+
+Chủ dự án chốt: Claude Security chỉ dùng ở giai đoạn lập trình, ứng dụng không lưu hay hiển thị báo cáo bảo mật. Đã sửa `PRD.md` (bỏ mục 5.4 cũ, đánh số lại), `SRS.md` (FR-4 đã loại bỏ, giữ số hiệu), `ERD.md` (bỏ bảng `SECURITY_REPORT`). `Opus Architect` cần bỏ `SECURITY_REPORT` cùng `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `gov_db` Phase 2 trong D1, và không dành chỗ trong MinIO cho báo cáo bảo mật khi duyệt lại kế hoạch.

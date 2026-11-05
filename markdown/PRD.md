@@ -14,8 +14,7 @@
    - [5.1 Quét mã nguồn tĩnh qua CI & Quản lý cụm Polyrepo](#51-quét-mã-nguồn-tĩnh-qua-ci--quản-lý-cụm-polyrepo)
    - [5.2 Bản đồ kiến trúc tương tác & So sánh phiên bản](#52-bản-đồ-kiến-trúc-tương-tác--so-sánh-phiên-bản)
    - [5.3 Phân tích tác động & Cổng ngữ cảnh MCP cho AI Agent](#53-phân-tích-tác-động--cổng-ngữ-cảnh-mcp-cho-ai-agent)
-   - [5.4 Bảo mật Claude Security](#54-bảo-mật-claude-security)
-   - [5.5 Tính năng thông minh Đa mô hình AI — đề xuất khác biệt](#55-tính-năng-thông-minh-đa-mô-hình-ai--đề-xuất-khác-biệt)
+   - [5.4 Tính năng thông minh Đa mô hình AI — đề xuất khác biệt](#54-tính-năng-thông-minh-đa-mô-hình-ai--đề-xuất-khác-biệt)
 6. [User Stories tiêu biểu](#6-user-stories-tiêu-biểu)
 7. [Đề xuất công nghệ](#7-đề-xuất-công-nghệ)
 8. [Rủi ro và Giả định](#8-rủi-ro-và-giả-định)
@@ -42,7 +41,7 @@
 - Tự động hóa 100% việc sinh bản đồ kiến trúc hệ thống trực tiếp từ mã nguồn (Static Code Analysis) và cập nhật liên tục qua pipeline CI/CD.
 - Cung cấp giao diện đồ thị tương tác trực quan giúp lập trình viên mới nắm bắt kiến trúc, luồng gọi API và luồng sự kiện Kafka nhanh chóng.
 - Cung cấp chuẩn ngữ cảnh có cấu trúc (thông qua Model Context Protocol - MCP và JSON Graph) làm đầu vào thời gian thực cho các AI Agent (Claude Code, Codex) khi phát triển hoặc sửa lỗi xuyên qua nhiều repo.
-- Rà soát lỗ hổng bảo mật tự động (Claude Security) gắn liền với từng phiên bản kiến trúc. Kiểm thử E2E của client bằng Playwright là công cụ phát triển, không phải tính năng dành cho người dùng.
+- Kiểm thử E2E của client bằng Playwright và rà soát bảo mật bằng Claude Security là công cụ trong giai đoạn lập trình, không phải tính năng dành cho người dùng ứng dụng.
 
 ## 3. Đối tượng người dùng
 
@@ -51,7 +50,7 @@
 | Lập trình viên / Developer (Fresher) | Xem sơ đồ kết nối giữa các microservice, tra cứu nhanh API contract, Kafka topic và luồng dữ liệu mà không cần mở từng repo |
 | Tác tử AI / AI Coding Agent (Claude, Codex) | Truy vấn đồ thị phụ thuộc và hợp đồng API qua giao thức MCP để hiểu ngữ cảnh đa repo trước khi thêm tính năng hoặc sửa lỗi |
 | Kiến trúc sư / Tech Lead | Phân tích bán kính ảnh hưởng (Impact Analysis) khi thay đổi API, phát hiện phụ thuộc vòng (circular dependencies) và đánh giá kiến trúc với sự hỗ trợ của 4 mô hình AI |
-| Quản trị hệ thống / Platform Admin | Quản lý cụm repo, cấu hình Keycloak IAM, kiểm soát truy cập mạng (localhost; NetBird khi mở truy cập từ xa), theo dõi báo cáo bảo mật Claude Security |
+| Quản trị hệ thống / Platform Admin | Quản lý cụm repo, cấu hình Keycloak IAM, kiểm soát truy cập mạng (localhost; NetBird khi mở truy cập từ xa) |
 
 ## 4. Công cụ tương đồng
 
@@ -89,11 +88,7 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 - [x] **[M]** Cung cấp MCP Server (Model Context Protocol) tích hợp sẵn các tool (`get_service_topology`, `analyze_breaking_change`, `get_topic_subscribers`) cho Claude Code và Codex
 - [x] **[M]** Xuất gói ngữ cảnh kiến trúc rút gọn (`ai-architecture-context.json`) theo từng phạm vi tính năng, đính kèm làm artifact của CI để AI Agent ngoài máy local (vd: phiên cloud) vẫn đọc được mà không cần gọi MCP Server
 
-### 5.4 Bảo mật Claude Security
-
-- [x] **[M]** Quét lỗ hổng bảo mật và điểm yếu hệ thống tự động bằng Claude Security sau mỗi lần thay đổi code, lưu báo cáo và theo dõi trạng thái vá lỗi
-
-### 5.5 Tính năng thông minh Đa mô hình AI — đề xuất khác biệt
+### 5.4 Tính năng thông minh Đa mô hình AI — đề xuất khác biệt
 
 - [x] **[C]** Trợ lý phân tích kiến trúc hỗ trợ chuyển đổi linh hoạt giữa 4 mô hình AI: **Claude, ChatGPT, Gemini, và Grok** (triển khai theo lộ trình: bắt đầu 1 provider qua interface `AiProvider`, thêm các provider còn lại sau MVP)
 - [x] **[C]** Tự động sinh giải pháp tái cấu trúc (refactoring) khi phát hiện phụ thuộc vòng (circular dependency) hoặc nghẽn cổ chai giữa các microservice
@@ -103,7 +98,7 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 - Là **lập trình viên mới (fresher)**, tôi muốn nhìn thấy sơ đồ tổng thể các microservice và luồng Kafka topic được cập nhật theo đúng nhánh `main` hiện tại để hiểu hệ thống ngay trong ngày đầu nhận việc.
 - Là **kỹ sư phát triển sử dụng AI Agent (Claude Code / Codex)**, tôi muốn AI tự động truy vấn MCP Server của DevMapper để biết rõ những repo nào đang gọi API tôi sắp sửa, nhằm tránh làm hỏng các service khác.
 - Là **Tech Lead**, tôi muốn đối chiếu sự thay đổi kiến trúc giữa các phiên bản và nhờ các mô hình AI (Claude/ChatGPT/Gemini/Grok) đánh giá rủi ro trước khi phê duyệt thiết kế.
-- Là **Quản trị viên hệ thống (Platform Admin)**, tôi muốn xem lại báo cáo lỗ hổng Claude Security của từng bản build để đảm bảo hệ thống luôn an toàn, ổn định.
+- Là **Quản trị viên hệ thống (Platform Admin)**, tôi muốn quản lý cụm repo và phân quyền người dùng qua Keycloak để kiểm soát ai được xem bản đồ kiến trúc.
 
 ## 7. Đề xuất công nghệ
 
@@ -111,14 +106,14 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 |---|---|---|---|
 | Frontend | React + Vite | SPA nội bộ tốc độ cao, kết hợp TypeScript đảm bảo an toàn kiểu dữ liệu khi xử lý cấu trúc đồ thị phức tạp | Client (trình duyệt); dev server chạy local |
 | Đồ thị kiến trúc | React Flow (`@xyflow/react`) + ELKjs | Vẽ bản đồ kiến trúc node-edge tương tác đa tầng; kết hợp thuật toán ELKjs để tự động tính toán tọa độ bố cục đồ thị không bị chồng chéo | Client (trình duyệt) |
-| Biểu đồ thống kê | Recharts + Mermaid.js | Recharts vẽ biểu đồ thống kê sức khỏe kiến trúc, số lượng test case tích lũy và lỗ hổng Claude Security; Mermaid.js xuất sơ đồ văn bản cho tài liệu Markdown | Client (trình duyệt) |
+| Biểu đồ thống kê | Recharts + Mermaid.js | Recharts vẽ biểu đồ thống kê sức khỏe kiến trúc; Mermaid.js xuất sơ đồ văn bản cho tài liệu Markdown | Client (trình duyệt) |
 | Form & State | React Hook Form + Zustand | Quản lý trạng thái bộ lọc đồ thị (theo nhánh, giao thức, mức độ rủi ro) và các biểu mẫu cấu hình hệ thống | Client (trình duyệt) |
 | Styling | TailwindCSS + ShadCN | Thiết kế giao diện hiện đại, nhẹ, hỗ trợ TypeScript thuần và tuân thủ quy tắc đóng gói component dùng chung tại `client/src/lib/` | Client; build chạy local |
 | Package manager & Runtime | Bun | Công cụ chính của toàn bộ frontend: cài gói (`bun install`, lockfile `bun.lock`), chạy dev server và script (`bun run dev`, `bunx --bun vite`), thay npm/Node cho thao tác hằng ngày. Giữ Node LTS (máy hiện có v24) cài sẵn làm phương án dự phòng cho công cụ chưa chạy ổn trên Bun (kiểm tra khi khởi tạo client, vd: Playwright, Dependency-Cruiser) | Local (công cụ phát triển) |
 | Linter kiến trúc | Dependency-Cruiser | Khóa cứng kiến trúc phân tầng đơn bước ở client (`Page -> Component -> Hook -> API`), chạy qua `bunx` trong bước lint | Local (lint, CI) |
 | Cache trạng thái UI | TanStack Query | Tự động hóa việc tải dữ liệu đồ thị, lưu bộ nhớ đệm phía client và đồng bộ trạng thái bản đồ từ API máy chủ | Client (trình duyệt) |
 | Kiểm thử E2E | Playwright (kèm Trace Viewer) | Công cụ phát triển để kiểm thử E2E client của DevMapper trên trình duyệt thật, bộ test tích lũy tăng dần sau mỗi thay đổi client; cấu hình `trace: 'retain-on-failure'` để dùng Trace Viewer tìm lỗi UI chính xác, báo cáo của test lỗi lưu ở `testing/versions/`. Không phải tính năng dành cho người dùng ứng dụng | Local (laptop/runner) |
-| Bảo mật & Rà soát | Claude Security (plugin `claude-security`) | Quét lỗ hổng tĩnh trong phiên Claude Code ở mức effort chọn trước, mỗi phát hiện được kiểm chứng chéo trước khi vào báo cáo (`CLAUDE-SECURITY-RESULTS.md/.jsonl/.sarif`); chạy sau mỗi đợt cập nhật mã nguồn | Cloud (model Claude chạy qua Claude Code, mã nguồn được gửi tới API Anthropic); công cụ chạy trong phiên local |
+| Bảo mật & Rà soát | Claude Security (plugin `claude-security`) | Công cụ giai đoạn lập trình (không phải tính năng ứng dụng): quét lỗ hổng tĩnh trong phiên Claude Code ở mức effort chọn trước, mỗi phát hiện được kiểm chứng chéo trước khi vào báo cáo (`CLAUDE-SECURITY-RESULTS.md/.jsonl/.sarif` trong thư mục `CLAUDE-SECURITY-<timestamp>/` của repo); chạy sau mỗi đợt cập nhật mã nguồn | Cloud (model Claude chạy qua Claude Code, mã nguồn được gửi tới API Anthropic); công cụ chạy trong phiên local |
 | Backend | Spring Boot (Microservices) | Tách thành 4 Core Microservices (`scanner-service`, `topology-service`, `ai-mcp-service`, `quality-gov-service`) và 1 API Gateway, giúp tối ưu cô lập lỗi và quản lý bởi đội ngũ AI Agent | Local (container trên laptop) |
 | Phân tích mã tĩnh | Tree-sitter + OpenAPI/AsyncAPI Parser | Phân tích cây cú pháp trừu tượng (AST) đa ngôn ngữ và đọc các file đặc tả để tự động phát hiện điểm gọi API/Kafka từ source code | Local (scanner-cli trên runner CI tự host) |
 | Bảo mật tầng API | Spring Security | Xác thực JWT do Keycloak phát hành cho mọi request; kiểm soát phân quyền RBAC chặt chẽ ngay tại tầng API của API Gateway và các microservices | Local (trong từng service) |
@@ -129,7 +124,7 @@ Ký hiệu ưu tiên: **M** = Must-have (MVP) · **S** = Should-have (Phase 2) �
 | Luồng sự kiện | Apache Kafka KRaft (tự host trên PC) | Giao tiếp bất đồng bộ giữa các microservices nội bộ (vd: `scanner-service` quét xong → `topology-service`); CI bên ngoài chỉ gọi Ingestion API, không truy cập Kafka trực tiếp | Local (không đưa lên cloud; cân nhắc bỏ/thay ở MVP để tiết kiệm RAM) |
 | IAM / SSO | Keycloak (tự host trên PC) | Quản lý định danh tập trung, Realm, phân quyền người dùng và phát hành token chuẩn OIDC/OAuth2 cho cả Web App lẫn VPN | Local; hoặc dịch vụ định danh cloud nếu RAM không đủ (Phase 2) |
 | Truy cập từ xa (tùy chọn, Phase 2+) | NetBird Cloud | Máy chủ điều phối do NetBird vận hành nên không cần VPS; laptop là một thiết bị trong mạng và người kiểm thử cài NetBird client để truy cập. MVP vẫn bind `127.0.0.1`; khi bật truy cập từ xa thì xuất bản thêm cổng trên địa chỉ NetBird (WireGuard Zero-Trust). Gói miễn phí giới hạn số người dùng, kiểm tra lại khi triển khai | Cloud (NetBird Cloud) |
-| Lưu trữ đối tượng | MinIO (tự host trên PC) | Lưu trữ qua giao thức S3 các file kết quả quét AST JSON, báo cáo chi tiết của Claude Security | Local (dữ liệu nhạy cảm); sao lưu mã hóa lên cloud |
+| Lưu trữ đối tượng | MinIO (tự host trên PC) | Lưu trữ qua giao thức S3 các file kết quả quét AST JSON | Local (dữ liệu nhạy cảm); sao lưu mã hóa lên cloud |
 | Email / SMTP | Brevo | Kết nối với Keycloak và Backend qua SMTP để gửi email xác thực tài khoản và cảnh báo khi phát hiện thay đổi kiến trúc gây lỗi | Cloud (dịch vụ SMTP bên ngoài) |
 | Đa mô hình AI & MCP | Claude, ChatGPT, Gemini, Grok + MCP SDK | Kết nối cả 4 nền tảng AI lớn phục vụ phân tích tác động kiến trúc; cung cấp MCP Server chuẩn hóa ngữ cảnh cho AI Coding Agent | Cloud (API của các nhà cung cấp AI); MCP Server chạy local |
 | Reverse Proxy / TLS (tùy chọn, Phase 2+) | Traefik | Chỉ cần khi mở truy cập từ xa: định tuyến theo tên miền, chứng chỉ TLS tự động; MVP gọi thẳng `localhost` | Local, chỉ khi cần (Phase 2+) |
@@ -143,4 +138,4 @@ _Local = container/công cụ chạy trên laptop; Cloud = dịch vụ bên ngo�
 - **Rủi ro định tuyến đường truyền động (Dynamic URL resolution):** Một số lệnh gọi HTTP ghép chuỗi động lúc runtime có thể khó bóc tách 100% bằng phân tích tĩnh → cần kết hợp đọc cả file cấu hình (`application.yml`, `.env`) để nội suy đích đến.
 - **Rủi ro AI Agent ngoài mạng NetBird:** MCP Server chạy trên laptop (localhost) nên các phiên AI Agent chạy ngoài máy (vd: phiên cloud) không gọi được → phát hành `ai-architecture-context.json` làm artifact CI (mục 5.3) như đường dự phòng.
 - **Giới hạn kiểm thử bảo mật:** Claude Security là phân tích tĩnh mã nguồn, không tấn công ứng dụng đang chạy → chưa có kiểm thử xâm nhập động; bù bằng Playwright E2E ở các luồng xác thực/phân quyền, và xem xét công cụ pentest động (vd: Strix, cần khóa LLM trả phí) ở giai đoạn sau.
-- **Rủi ro bảo mật mã nguồn:** Dữ liệu cấu trúc mã nguồn và báo cáo lỗ hổng từ Claude Security rất nhạy cảm → bắt buộc chỉ bind `127.0.0.1` (MVP), thêm NetBird khi mở truy cập từ xa, và kiểm soát quyền qua Keycloak.
+- **Rủi ro bảo mật mã nguồn:** Dữ liệu cấu trúc mã nguồn rất nhạy cảm → bắt buộc chỉ bind `127.0.0.1` (MVP), thêm NetBird khi mở truy cập từ xa, và kiểm soát quyền qua Keycloak.

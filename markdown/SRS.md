@@ -19,7 +19,7 @@
    - [FR-1: Quản lý cụm hệ thống (System Group) và đồng bộ Polyrepo](#fr-1-quản-lý-cụm-hệ-thống-system-group-và-đồng-bộ-polyrepo)
    - [FR-2: Phân tích mã nguồn tĩnh và xây dựng đồ thị phụ thuộc](#fr-2-phân-tích-mã-nguồn-tĩnh-và-xây-dựng-đồ-thị-phụ-thuộc)
    - [FR-3: Bản đồ tương tác, phân tích tác động và cổng ngữ cảnh MCP](#fr-3-bản-đồ-tương-tác-phân-tích-tác-động-và-cổng-ngữ-cảnh-mcp)
-   - [FR-4: Quản lý báo cáo bảo mật Claude Security](#fr-4-quản-lý-báo-cáo-bảo-mật-claude-security)
+   - [FR-4: (Đã loại bỏ)](#fr-4-đã-loại-bỏ)
    - [FR-5: Xác thực tập trung Keycloak và phân quyền RBAC](#fr-5-xác-thực-tập-trung-keycloak-và-phân-quyền-rbac)
    - [FR-6: Nhật ký Audit và điều phối sự kiện Kafka](#fr-6-nhật-ký-audit-và-điều-phối-sự-kiện-kafka)
 4. [Yêu cầu phi chức năng](#4-yêu-cầu-phi-chức-năng)
@@ -39,14 +39,14 @@ Tài liệu này quy định các yêu cầu chức năng và phi chức năng c
 
 ### 1.2 Phạm vi
 
-Hệ thống tự động thu thập siêu dữ liệu kiến trúc từ nhiều kho mã nguồn (polyrepo) thông qua CI pipeline, hợp nhất thành bản đồ phụ thuộc microservice trực quan, tính toán bán kính ảnh hưởng khi thay đổi API/Kafka topic, cung cấp ngữ cảnh chuẩn MCP cho AI Agent, đồng thời lưu trữ báo cáo bảo mật Claude Security theo từng phiên bản.
+Hệ thống tự động thu thập siêu dữ liệu kiến trúc từ nhiều kho mã nguồn (polyrepo) thông qua CI pipeline, hợp nhất thành bản đồ phụ thuộc microservice trực quan, tính toán bán kính ảnh hưởng khi thay đổi API/Kafka topic, cung cấp ngữ cảnh chuẩn MCP cho AI Agent.
 
 ### 1.3 Đối tượng sử dụng
 
 - **Lập trình viên (Developer / Fresher):** Tra cứu sơ đồ kiến trúc, điểm cuối API, luồng sự kiện Kafka và phụ thuộc dịch vụ.
 - **Tác tử AI (AI Coding Agent):** Truy vấn ngữ cảnh kiến trúc đa repo qua giao thức MCP hoặc REST API để hỗ trợ viết code và sửa lỗi liên repo.
 - **Trưởng nhóm kỹ thuật (Tech Lead / Architect):** Giám sát thay đổi kiến trúc giữa các phiên bản, thực hiện phân tích tác động cùng 4 mô hình AI (Claude, ChatGPT, Gemini, Grok).
-- **Quản trị hệ thống (Platform Admin):** Quản lý người dùng/phân quyền qua Keycloak, giám sát truy cập mạng và xử lý cảnh báo bảo mật từ Claude Security.
+- **Quản trị hệ thống (Platform Admin):** Quản lý người dùng/phân quyền qua Keycloak, giám sát truy cập mạng.
 
 ## 2. Mô tả tổng quan
 
@@ -85,9 +85,9 @@ DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Develope
 - **Tích hợp Đa mô hình AI (Claude, ChatGPT, Gemini, Grok) — Phase 3:** Gửi đồ thị tác động tới các mô hình AI qua interface `AiProvider` để nhận phân tích rủi ro và gợi ý sửa code chéo repo; MVP chỉ cần 1 provider.
 - **Cổng giao thức MCP:** Cung cấp endpoint MCP chuẩn tại `ai-mcp-service` để Claude Code và OpenAI Codex tự động gọi và nạp ngữ cảnh kiến trúc liên repo.
 
-### FR-4: Quản lý báo cáo bảo mật Claude Security
+### FR-4: (Đã loại bỏ)
 
-- Kích hoạt công cụ **Claude Security** quét điểm yếu hệ thống/lỗ hổng bảo mật sau mỗi đợt build, lưu báo cáo (`SECURITY_REPORT`) và theo dõi trạng thái vá lỗi.
+Claude Security là công cụ trong giai đoạn lập trình (xem `AGENTS.md` Mục 3), không phải chức năng của ứng dụng. Số hiệu FR-4 được giữ lại để không đổi số các yêu cầu khác.
 
 ### FR-5: Xác thực tập trung Keycloak và phân quyền RBAC
 
@@ -107,7 +107,7 @@ DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Develope
 
 - MVP chạy trên `localhost`; TLS qua reverse proxy **Traefik** (Let's Encrypt) chỉ cần khi mở truy cập từ xa (Phase 2).
 - **Cô lập mạng:** Các dịch vụ không mở port public; mọi cổng bind `127.0.0.1` (MVP). Khi mở truy cập từ xa, mọi truy cập đi qua mạng ảo **NetBird** (100.64.0.0/10) và Traefik chỉ bind cổng `443` vào dải IP NetBird.
-- Mã nguồn và cấu hình không chứa secret cứng; mọi đợt cập nhật phải vượt qua cổng kiểm tra Claude Security.
+- Mã nguồn và cấu hình không chứa secret cứng; trong giai đoạn lập trình, mọi đợt cập nhật phải được rà soát bằng Claude Security (xem `AGENTS.md`).
 
 ### NFR-2: Hiệu năng và tối ưu tài nguyên tự host
 

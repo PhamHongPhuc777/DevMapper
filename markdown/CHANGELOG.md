@@ -57,3 +57,11 @@ Thêm `contracts/README.md` mô tả mục đích, danh sách file và quy tắc
 ## **2026-11-04** -- Căn chỉnh Playwright thành công cụ phát triển
 
 `PRD.md`: bỏ các tính năng, vai trò và user story xem Playwright Trace trong ứng dụng; mục 5.4 chỉ còn Bảo mật Claude Security; dòng Playwright và MinIO ở Mục 7 chỉnh lại. `ERD.md`: bỏ bảng `TEST_TRACE_ARTIFACT` khỏi sơ đồ và bảng phân bổ schema. `AGENTS.md` Mục 3: Playwright dùng `trace: 'retain-on-failure'`, báo cáo của test lỗi lưu ở `testing/versions/`.
+
+## **2026-11-05** -- Phân trang theo kiểu dữ liệu; Platform Admin không dùng Claude Security
+
+`AGENTS.md` tiêu chí 10: chọn kỹ thuật phân trang theo kiểu dữ liệu cần liệt kê rồi render; danh sách lớn có thứ tự thời gian hoặc chỉ-thêm ưu tiên `Cursor-based` (keyset) kết hợp `Time-windowed`, `Offset-based` chỉ cho danh sách nhỏ ổn định, kỹ thuật từng kiểu dữ liệu ghi trong `PLAN.md`. `PRD.md` và `SRS.md`: Platform Admin không còn dùng Claude Security (Claude Security là công cụ giai đoạn lập trình); user story của Platform Admin đổi sang quản lý cụm repo và phân quyền.
+
+## **2026-11-05** -- Loại chuỗi Claude Security khỏi sản phẩm
+
+`PRD.md`: bỏ mục 5.4 Bảo mật Claude Security (Đa mô hình AI thành 5.4), bỏ khỏi biểu đồ thống kê, MinIO và rủi ro dữ liệu; dòng công cụ ghi rõ là công cụ giai đoạn lập trình. `SRS.md`: FR-4 đánh dấu đã loại bỏ (giữ số hiệu), NFR-1 chỉ còn rà soát khi lập trình. `ERD.md`: bỏ bảng `SECURITY_REPORT`.
