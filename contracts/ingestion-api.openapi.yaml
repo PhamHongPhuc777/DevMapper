@@ -4,13 +4,13 @@ info:
   version: 1.0.0
   description: |
     API của scanner-service. Ba nhóm, mỗi nhóm một cơ chế xác thực:
-    - `ingest`: CI (runner tự host trên cùng laptop) gửi manifest, tải ai-architecture-context.json. Bearer Ingestion Token (mỗi repo 1 token).
+    - `ingest`: CI (runner tự host trên cùng máy chủ desktop) gửi manifest, tải ai-architecture-context.json. Bearer Ingestion Token (mỗi repo 1 token).
     - `admin`: quản lý System Group, Repository, cấp/xoay token. Bearer DEVMAPPER_ADMIN_TOKEN (MVP, thay bằng Keycloak ở Phase 2).
     - `internal`: topology-service lấy manifest gốc qua mạng docker. Header X-Internal-Token.
     Lỗi trả theo RFC 9457 (application/problem+json). MVP không có reverse proxy: cổng compose chỉ bind 127.0.0.1, không mở ra mạng ngoài; ba nhóm phân tách bằng cơ chế xác thực. Khi thêm Traefik/NetBird (tùy chọn, Phase 2) chỉ được mở `/api/v1/ingest/**`.
 servers:
   - url: http://localhost:8081
-    description: scanner-service trên laptop (MVP, bind 127.0.0.1)
+    description: scanner-service trên máy chủ desktop (MVP, bind 127.0.0.1)
 tags:
   - name: ingest
   - name: admin
@@ -178,6 +178,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
       responses:
         '200':
           description: Mới nhất trước
@@ -188,6 +190,9 @@ paths:
                   - $ref: '#/components/schemas/Page'
                   - properties:
                       items: { type: array, items: { $ref: '#/components/schemas/Snapshot' } }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
 
   /internal/v1/snapshots/{snapshotId}/manifest:
     parameters:
@@ -225,6 +230,11 @@ components:
       { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
     Cursor:
       { name: cursor, in: query, required: false, schema: { type: string, maxLength: 200 }, description: Giá trị next_cursor của trang trước (opaque) }
+    # Cửa sổ thời gian cho danh sách chỉ-thêm (keyset, không offset)
+    From:
+      { name: from, in: query, required: false, schema: { type: string, format: date-time }, description: 'Lọc created_at >= from (gồm)' }
+    To:
+      { name: to, in: query, required: false, schema: { type: string, format: date-time }, description: 'Lọc created_at < to (không gồm); from >= to trả 400' }
 
   responses:
     Problem:

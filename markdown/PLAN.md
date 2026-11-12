@@ -35,10 +35,10 @@ Chưa tra: Tree-sitter / `java-tree-sitter` (hoãn sang Phase 2, xem quyết đ�
 
 ```mermaid
 flowchart LR
-  subgraph CI["Runner CI tự host trên cùng laptop"]
+  subgraph CI["Runner CI tự host trên cùng desktop"]
     CLI["scanner-cli<br/>(JavaParser)"]
   end
-  subgraph Host["Laptop Razer Blade 14 (docker compose, cổng bind 127.0.0.1, không reverse proxy)"]
+  subgraph Host["Desktop máy chủ: i5-11400F, 32 GB, Windows 11 Pro (docker compose, cổng bind 127.0.0.1, không reverse proxy)"]
     SS["scanner-service :8081<br/>Ingestion + Admin API"]
     TS["topology-service :8082<br/>đồ thị, blast radius"]
     MCP["ai-mcp-service :8083<br/>MCP /mcp (read-only)"]
@@ -48,6 +48,8 @@ flowchart LR
     KF{{"Kafka KRaft<br/>devmapper.scanner.snapshot-received.v1"}}
   end
   AG["Claude Code / Codex"]
+  LP["Laptop Razer Blade 14<br/>(máy khách / dự phòng)"]
+  LP -. "Remote Desktop / SSH tunnel<br/>(NetBird Cloud: Phase 2)" .-> Host
 
   CLI -- "POST http://localhost:8081/api/v1/ingest/manifests<br/>Bearer Ingestion Token" --> SS
   CLI -- "GET /api/v1/ingest/ai-context" --> SS
@@ -63,7 +65,7 @@ flowchart LR
   AG -- "MCP Streamable HTTP<br/>http://localhost:8083/mcp, Bearer MCP token" --> MCP
 ```
 
-Cấu trúc thư mục (monorepo Gradle Kotlin DSL, client chưa làm ở MVP; khi làm frontend dùng Bun làm package manager/runtime chính, Node LTS dự phòng theo PRD Mục 7, và áp dụng ghi chú Anime.js ngày 2026-11-04):
+Cấu trúc thư mục (monorepo Gradle Kotlin DSL, client chưa làm ở MVP; khi làm frontend ở M5 dùng Bun làm package manager/runtime chính, Node LTS dự phòng theo PRD Mục 7, và áp dụng ghi chú Anime.js ngày 2026-11-04, xem M5 ở Mục 4):
 
 ```text
 settings.gradle.kts, build.gradle.kts, gradle.properties, gradle/libs.versions.toml, gradlew*
@@ -74,22 +76,25 @@ services/scanner-service/        # Spring Boot, schema scanner_db
 services/topology-service/       # Spring Boot, schema topology_db
 services/ai-mcp-service/         # Spring Boot (servlet), không DB
 infra/                           # docker-compose.yml, postgres/init.sql, .env.example
+client/                          # M5, chưa tạo ở MVP (sau thiết kế UI từ Claude Design)
 ```
 
 Gói Java mỗi service: `com.devmapper.<service>.{controller, service, mapper, model, dto, client, messaging, config}`. Luồng bắt buộc `Controller -> Service -> Mapper -> Model`. Kafka listener (`messaging`) đóng vai trò như Controller (chỉ gọi Service). Gọi ra ngoài (REST service khác, MinIO) đặt trong `client/` và chỉ Service được gọi. Mapper dùng XML trong `src/main/resources/mapper/`.
 
 ### 3. Quyết định kiến trúc
 
-Trạng thái: D1, D4, D9, D11 và danh sách N/A (Mục 5) là **đề xuất, chờ Chủ dự án xác nhận** (câu 2–6 Mục 8). Các quyết định còn lại đã khớp phản hồi của Chủ dự án nhưng toàn bộ kế hoạch vẫn chưa được phê duyệt.
+Trạng thái: D1, D4, D9, D11 và danh sách N/A (Mục 5) **đã xác nhận 2026-11-12** (câu 2–6 Mục 8). D13 viết lại theo quyết định máy chủ desktop ngày 2026-11-12. Các quyết định còn lại đã khớp phản hồi của Chủ dự án, nhưng **toàn bộ kế hoạch vẫn chờ phê duyệt chính thức** tại Cổng Xác nhận; chưa viết code.
 
-- **D1 — Phân bổ bảng theo schema (đề xuất, chờ Chủ dự án xác nhận; điều chỉnh so với ERD):**
+- **D1 — Phân bổ bảng theo schema (đã xác nhận 2026-11-12; điều chỉnh so với ERD):**
 
 | Schema | Bảng MVP | Ghi chú |
 | :--- | :--- | :--- |
 | `scanner_db` | `system_group`, `repository`, `scan_snapshot` | `SYSTEM_GROUP` chuyển từ `users_db` sang đây vì FR-1 (đăng ký cụm polyrepo) thuộc scanner; FK `repository.group_id` nằm trong cùng schema |
 | `topology_db` | `group_view`, `topology_snapshot`, `service_node`, `exposed_contract`, `message_topic`, `dependency_edge` | `group_view`, `topology_snapshot` là bản sao tối thiểu nhận từ sự kiện Kafka |
 | `ai_db` | (trống ở MVP) | `AI_IMPACT_SESSION` làm ở Phase 3 |
-| `users_db` | (trống ở MVP) | Phase 2: `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION`, `TEST_TRACE_ARTIFACT`, `SECURITY_REPORT` và bảng mới `group_binding(group_id, keycloak_group_id, netbird_group_id)` thay cho 2 cột này trên `SYSTEM_GROUP` |
+| `users_db` (`user-service`) | (trống ở MVP) | Phase 2: `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION` và bảng mới `group_binding(group_id, keycloak_group_id, netbird_group_id)` thay cho 2 cột này trên `SYSTEM_GROUP` |
+
+Báo cáo Playwright/Trace Viewer và báo cáo Claude Security là công cụ lập trình (quyết định 2026-11-04 và 2026-11-05): không có bảng trong DB, không có bucket hay tiền tố MinIO nào cho chúng. MinIO MVP chỉ có bucket `scan-manifests`.
 
 Cột chi tiết và chỉ mục:
 
@@ -105,29 +110,53 @@ Cột chi tiết và chỉ mục:
 - `snapshot_id`, `group_id`, `repo_id` trong `topology_db` là khóa logic sang `scanner_db`: không FK, không JOIN xuyên schema. FK chỉ trong cùng schema như trên.
 
 - **D2 — Cô lập schema ở mức DB:** `infra/postgres/init.sql` tạo 4 schema và role riêng `scanner_svc`, `topology_svc` (MVP chỉ 2 role), mỗi role chỉ có quyền trên schema của mình (`REVOKE ALL ON SCHEMA public`). JDBC URL đặt `currentSchema=<schema>`; Flyway mỗi service: `spring.flyway.schemas=<schema>`, `default-schema=<schema>`, `create-schemas=false`, bảng lịch sử nằm trong schema của service. Vi phạm xuyên schema sẽ lỗi quyền ngay khi chạy.
-- **D3 — Luồng nạp:** CI chỉ gọi Ingestion API (MVP: runner tự host trên cùng laptop gọi `http://localhost:8081`, không có đường HTTPS công khai). scanner-service: xác thực token → validate (Bean Validation trên record của `libs/devmapper-contracts` + đối chiếu `repo.git_url`) → tính SHA-256 → ghi MinIO `manifests/{repo_id}/{snapshot_id}.json` → insert `scan_snapshot` (`RECEIVED`) → publish Kafka → `PUBLISHED`. Outbox tối giản: job 60s phát lại snapshot `RECEIVED` (xem `contracts/kafka-events.md`). topology-service KHÔNG đọc MinIO mà gọi REST nội bộ của scanner để giữ MinIO thuộc riêng scanner.
-- **D4 — Scanner CLI MVP chỉ hỗ trợ Java/Spring bằng JavaParser (đề xuất, chờ Chủ dự án xác nhận)** (`@RestController`, `@RequestMapping`/`@GetMapping`..., `@FeignClient`, `RestClient`/`RestTemplate`/`WebClient` với URI literal, `@KafkaListener`, `KafkaTemplate.send("literal")`, nội suy `${...}` từ `application.yml/properties`, `spring.datasource.url` → `DB_ACCESS`). Tree-sitter đa ngôn ngữ, Axios, gRPC (`.proto`), OpenAPI/AsyncAPI để Phase 2; schema manifest đã chừa sẵn `GRPC`, `typescript`... nên không phải đổi hợp đồng.
+- **D3 — Luồng nạp:** CI chỉ gọi Ingestion API (MVP: runner tự host trên cùng desktop gọi `http://localhost:8081`, không có đường HTTPS công khai). scanner-service: xác thực token → validate (Bean Validation trên record của `libs/devmapper-contracts` + đối chiếu `repo.git_url`) → tính SHA-256 → ghi MinIO `manifests/{repo_id}/{snapshot_id}.json` → insert `scan_snapshot` (`RECEIVED`) → publish Kafka → `PUBLISHED`. Outbox tối giản: job 60s phát lại snapshot `RECEIVED` (xem `contracts/kafka-events.md`). topology-service KHÔNG đọc MinIO mà gọi REST nội bộ của scanner để giữ MinIO thuộc riêng scanner.
+- **D4 — Scanner CLI MVP chỉ hỗ trợ Java/Spring bằng JavaParser (đã xác nhận 2026-11-12)** (`@RestController`, `@RequestMapping`/`@GetMapping`..., `@FeignClient`, `RestClient`/`RestTemplate`/`WebClient` với URI literal, `@KafkaListener`, `KafkaTemplate.send("literal")`, nội suy `${...}` từ `application.yml/properties`, `spring.datasource.url` → `DB_ACCESS`). Tree-sitter đa ngôn ngữ, Axios, gRPC (`.proto`), OpenAPI/AsyncAPI để Phase 2; schema manifest đã chừa sẵn `GRPC`, `typescript`... nên không phải đổi hợp đồng.
 - **D5 — Nối đồ thị (stitching):** đồ thị hiện hành của group = head (snapshot mới nhất của nhánh mặc định) của mỗi repo. Đường dẫn chuẩn hóa `path_pattern` (biến `{x}`/`:x` → `{}`, bỏ `/` cuối). Sau mỗi lần nạp, chạy 1 câu `UPDATE dependency_edge ... FROM service_node, exposed_contract` cho toàn bộ cạnh của head trong group: khớp `target_service_hint = service_key` và `(http_method, path_pattern)`; không có hint thì khớp duy nhất theo `(method, path_pattern)` trong group. Cạnh Kafka nối qua `message_topic`. Cạnh từng `RESOLVED` mà nay không khớp → `UNRESOLVED` + `is_breaking_risk=true`. Không lặp gọi DB theo cạnh.
 - **D6 — Blast radius:** `WITH RECURSIVE` trên head snapshots trong `topology_db`, chống vòng bằng mảng path, `max_depth` ≤ 5, ngữ nghĩa ở `contracts/mcp-tools.md`.
 - **D7 — Cache:** Redis, khóa `topo:{group_id}:{graph_version}:{hash(params)}`, TTL 1 giờ. Mỗi lần nạp tăng `graph_version` nên khóa cũ tự vô hiệu (không cần xóa thủ công). ETag `"g<graph_version>"`.
 - **D8 — Xác thực MVP (không Keycloak):** Ingestion Token mỗi repo (`dmi_` + 32 byte ngẫu nhiên base64url, lưu SHA-256, so sánh constant-time); `DEVMAPPER_ADMIN_TOKEN` cho admin API; `DEVMAPPER_INTERNAL_TOKEN` (header `X-Internal-Token`) giữa các service; `DEVMAPPER_MCP_TOKEN` cho `/mcp`. Cài đặt bằng 1 `OncePerRequestFilter` mỗi service, chưa dùng Spring Security (thêm ở Phase 2 cùng Keycloak). MVP không có reverse proxy: mọi cổng compose chỉ bind `127.0.0.1` (`"127.0.0.1:<port>:<port>"`), không mở ra mạng ngoài; các nhóm endpoint tách bằng token. Khi thêm Traefik/NetBird (tùy chọn, Phase 2) chỉ mở `/api/v1/ingest/**`.
-- **D9 — Hoãn API Gateway sang Phase 2 (đề xuất, chờ Chủ dự án xác nhận)**, đi cùng Keycloak/JWT. MVP chỉ có 3 service, client gọi thẳng cổng compose trên `localhost` (scanner `8081`, topology `8082` chỉ dùng nội bộ, ai-mcp `8083`); không có Traefik. Thêm Gateway lúc này chỉ là một hop không có việc và tốn thêm RAM trên laptop.
+- **D9 — Hoãn API Gateway sang Phase 2 (đã xác nhận 2026-11-12)**, đi cùng Keycloak/JWT. MVP chỉ có 3 service, client gọi thẳng cổng compose trên `localhost` (scanner `8081`, topology `8082` chỉ dùng nội bộ, ai-mcp `8083`); không có Traefik. Thêm Gateway lúc này chỉ là một hop không có việc và tốn thêm RAM.
 - **D10 — `ai-architecture-context.json`:** topology-service sinh; scanner-service proxy qua `GET /api/v1/ingest/ai-context` (chỉ 1 bề mặt công khai, tái dùng Ingestion Token, scope = group của repo); `scanner-cli export-context` ghi file cho CI làm artifact.
-- **D11 — Stack (đề xuất, chờ Chủ dự án xác nhận):** Java 21 LTS, Spring Boot 4.1.x, MyBatis starter 4.1.x, Flyway và spring-kafka theo BOM của Boot, MCP Java SDK lõi, JavaParser, MinIO Java SDK, PostgreSQL 17, Redis 7, Kafka KRaft (apache/kafka), MinIO. `libs/devmapper-contracts` là module dùng chung duy nhất (dùng bởi scanner-cli, scanner-service, topology-service, ai-mcp-service: ≥ 3 nơi theo quy tắc 2.2), chỉ chứa record + enum.
+- **D11 — Stack (đã xác nhận 2026-11-12):** Java 21 LTS, Spring Boot 4.1.x, MyBatis starter 4.1.x, Flyway và spring-kafka theo BOM của Boot, MCP Java SDK lõi, JavaParser, MinIO Java SDK, PostgreSQL 17, Redis 7, Kafka KRaft (apache/kafka), MinIO. `libs/devmapper-contracts` là module dùng chung duy nhất (dùng bởi scanner-cli, scanner-service, topology-service, ai-mcp-service: ≥ 3 nơi theo quy tắc 2.2), chỉ chứa record + enum.
 - **D12 — Kafka không xác thực ở MVP** (chỉ trong mạng docker; nếu cần publish port cho dev thì chỉ bind `127.0.0.1`). SASL để Phase 2.
-- **D13 — Hạ tầng một laptop:** toàn bộ chạy trên Razer Blade 14 (2016: i7-6700HQ 4 nhân/8 luồng, 16 GB RAM không nâng cấp được), Docker Desktop + WSL2 giới hạn ~6 GB qua `.wslconfig` (xem `SETUP.md`), không VPS. Tổng `mem_limit` các container của stack MVP ≤ ~3,5 GB (bảng ngân sách ở M0), phần còn lại của 6 GB dành cho Testcontainers. Traefik và NetBird chỉ là tùy chọn từ Phase 2.
+- **D13 — Hạ tầng một máy chủ desktop (viết lại 2026-11-12):**
+  - Máy chủ: desktop i5-11400F 6 nhân/12 luồng, 32 GB DDR4, SSD, Windows 11 Pro, luôn bật; RTX 2060 không dùng cho stack. Không VPS. Docker Desktop + WSL2 giới hạn khoảng **12 GB** qua `.wslconfig` (xem `SETUP.md` mục 2026-11-12): đủ cho stack MVP chạy cùng Testcontainers và Gradle daemon, còn dư cho Phase 2 (Keycloak, `user-service`, API Gateway).
+  - Ngân sách `mem_limit` của stack MVP giữ nguyên **3200m** (bảng ở Mục 4); không nâng trước khi có số liệu `docker stats` thật trên desktop. M0 vẫn báo container nào vượt 90% giới hạn.
+  - Tắt stack compose khi chạy Testcontainers: chỉ còn là **khuyến nghị** (12 GB đủ cho cả hai), không phải quy tắc bắt buộc.
+  - Runner CI tự host (GitHub Actions) và thư mục Remote Control đặt trên desktop. CI gọi `http://localhost:8081`.
+  - `infra/docker-compose.yml` và `infra/.env` độc lập máy: không đường dẫn tuyệt đối, không tên máy hay IP cứng, để laptop Razer Blade 14 chạy được làm dự phòng (khi đó tự giảm `.wslconfig` của laptop, xem `SETUP.md` mục 2026-11-04).
+  - Mọi cổng vẫn bind `127.0.0.1`. Truy cập từ laptop (máy khách) qua Remote Desktop (Windows 11 Pro làm máy chủ RDP được) hoặc SSH tunnel; NetBird Cloud và Traefik chỉ là tùy chọn từ Phase 2.
+  - Phiên cloud (nơi agent viết code) có Java 21 và Gradle 8.14.3 nhưng không có Docker daemon: compose, Flyway trên Postgres thật, Testcontainers và smoke test chỉ chạy trên desktop (xem tiêu chí nghiệm thu tách đôi của M0).
 
 ### 4. Danh sách module cho Sonnet Executor
 
 | # | Module | Thư mục được phép sửa | Phụ thuộc | Effort | Đầu ra chính |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| M0 | Nền tảng build + hợp đồng Java + hạ tầng | gốc (`settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/`, `gradlew*`), `libs/devmapper-contracts/`, `infra/` | — | high | Gradle multi-project (build cache, configuration cache, parallel), version catalog, record cho manifest/event/tool output, test hợp đồng: `contracts/examples/ast-manifest.example.json` validate đúng schema (thư viện json-schema chỉ ở `testImplementation`) và deserialize vào record; `infra/docker-compose.yml` (postgres, redis, kafka KRaft, minio + 3 service; mọi `ports` dạng `127.0.0.1:<host>:<container>`, `mem_limit` và heap JVM theo bảng ngân sách bộ nhớ bên dưới, không reverse proxy), `infra/postgres/init.sql` (D2), `infra/.env.example` chỉ tên biến, không giá trị; `gradle.properties` đặt `org.gradle.jvmargs=-Xmx1g` để Gradle daemon không tranh RAM với stack |
+| M0 | Nền tảng build + hợp đồng Java + hạ tầng | gốc (`settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/`, `gradlew*`), `libs/devmapper-contracts/`, `infra/`, `.github/workflows/` | — | high | `.github/workflows/ci.yml` (`runs-on: self-hosted` trên desktop, `./gradlew build --build-cache --configuration-cache`, test gắn tag `docker` chỉ chạy khi runner có Docker; chưa kích hoạt được tới khi runner đăng ký xong theo `SETUP.md`); Gradle multi-project (build cache, configuration cache, parallel), version catalog, record cho manifest/event/tool output, test hợp đồng: `contracts/examples/ast-manifest.example.json` validate đúng schema (thư viện json-schema chỉ ở `testImplementation`) và deserialize vào record; `infra/docker-compose.yml` (postgres, redis, kafka KRaft, minio + 3 service; mọi `ports` dạng `127.0.0.1:<host>:<container>`, `mem_limit` và heap JVM theo bảng ngân sách bộ nhớ bên dưới, `restart: unless-stopped`, không reverse proxy, không đường dẫn tuyệt đối hay tên máy cứng để chạy được cả trên desktop lẫn laptop dự phòng), `infra/postgres/init.sql` (D2), `infra/.env.example` chỉ tên biến, không giá trị; `gradle.properties` đặt `org.gradle.jvmargs=-Xmx1g` để Gradle daemon không tranh RAM với stack |
 | M1 | `scanner-cli` | `services/scanner-cli/` | M0 | high | Lệnh `scan --repo-root --out`, `push --manifest --api-url` (token đọc từ env `DEVMAPPER_INGESTION_TOKEN`), `export-context --api-url --out [--service-key --depth]`; parse tham số tay (không picocli), `java.net.http.HttpClient`, Jackson + jackson-dataformat-yaml; fixture repo Spring mẫu trong `src/test/resources` |
-| M2 | `scanner-service` | `services/scanner-service/` | M0 | high | Flyway `V1__scanner_init.sql`; Ingestion/Admin/Internal API theo `contracts/ingestion-api.openapi.yaml`; MinIO client; Kafka producer + job phát lại; phân trang cursor `(created_at, id)`; ProblemDetail |
+| M2 | `scanner-service` | `services/scanner-service/` | M0 | high | Flyway `V1__scanner_init.sql`; Ingestion/Admin/Internal API theo `contracts/ingestion-api.openapi.yaml`; MinIO client; Kafka producer + job phát lại; phân trang theo bảng kỹ thuật ở tiêu chí 10 (Mục 5): snapshot dùng keyset `(created_at DESC, snapshot_id)` + cửa sổ `from`/`to`, group/repo dùng keyset theo `name` (khớp `UNIQUE(name)`, `UNIQUE(group_id, name)`) có `limit` tối đa 200; ProblemDetail |
 | M3 | `topology-service` | `services/topology-service/` | M0 | xhigh | Flyway `V1__topology_init.sql`; Kafka consumer + DLT; client gọi manifest; batch insert (MyBatis `foreach`); stitching D5; blast radius D6; endpoint `/internal/v1/*` theo `contracts/mcp-tools.md`; Redis cache D7; ETag |
 | M4 | `ai-mcp-service` | `services/ai-mcp-service/` | M0 (hợp đồng endpoint nội bộ của M3, không cần M3 chạy) | high | MCP server sync tại `/mcp`, 3 tool, filter token, client `RestClient` tới topology; test bằng mock server (`MockRestServiceServer`) |
+| M5 | Frontend (**chưa thực hiện**, sau thiết kế UI từ Claude Design ở phiên khác) | `client/` (chỉ khi được lên kế hoạch chi tiết) | `markdown/DESIGN_BRIEF.md` + bản thiết kế hoàn chỉnh từ Claude Design (giai đoạn 2); M2–M4 chạy được | high → xhigh | Chưa giao việc. `Opus Architect` lập kế hoạch chi tiết M5 ở một lượt riêng khi có bản thiết kế (ghi chú bên dưới) |
 
-Ngân sách bộ nhớ compose (M0 áp dụng; tổng ≤ ~3,5 GB trong giới hạn WSL2 ~6 GB):
+Tiêu chí nghiệm thu M0 (tách đôi theo nơi chạy):
+
+- **(i) Phiên cloud (không có Docker daemon):** `./gradlew build` biên dịch toàn bộ multi-project; test hợp đồng (example manifest validate đúng `contracts/ast-manifest.schema.json`, các manifest sai bị loại, deserialize vào record của `libs/devmapper-contracts`); unit test; `buildHealth`. `docker compose -f infra/docker-compose.yml config` để kiểm cú pháp compose (chỉ cần CLI). Báo cáo của `Sonnet Executor` và `TESTING.md` phải ghi rõ: **chưa chạy trên hạ tầng thật** (chưa `compose up`, chưa Flyway trên Postgres, chưa Testcontainers). Đạt (i) là đủ để mở M1–M4 viết code song song trong cloud.
+- **(ii) Trên desktop (Docker Desktop đang chạy):** `docker compose up -d` lên đủ container và `healthcheck` xanh; `init.sql` tạo 4 schema + 2 role (D2); `docker stats` so với bảng ngân sách (báo container vượt 90%); sau M2/M3: Flyway V1 chạy trên Postgres thật, `./gradlew check` gồm Testcontainers, rồi smoke test thủ công ở Mục 6. (ii) do Chủ dự án hoặc phiên Remote Control trên desktop chạy; chưa đạt (ii) thì chưa `[REVIEW_PASSED]` cho phần hạ tầng/tích hợp.
+
+Gradle wrapper: kế hoạch cũ (câu 7) ghi Chủ dự án tự cài Gradle để sinh wrapper; nay phiên cloud đã có Gradle 8.14.3. Đây là **câu hỏi mở** ở Mục 8 (câu 8), chưa tự quyết.
+
+Ghi chú cho M5 (Frontend, chưa thực hiện):
+
+- Đầu vào: `markdown/DESIGN_BRIEF.md` và bản thiết kế do Claude Design làm ở một phiên khác (giai đoạn 2). Kế hoạch này chỉ giữ chỗ; không thiết kế UI ở đây.
+- Đồng hóa UI ngoại lai (`AGENTS.md` Mục 2.2): mã sinh từ Claude Design không được tích hợp nguyên trạng. `Opus Architect` lập kế hoạch bóc tách nguyên mẫu ShadCN + TailwindCSS vào `client/src/lib/` (pass-through/wrapper, chỉ khi dùng ≥ 3 nơi), tách state thành custom hook, rồi mới giao `Sonnet Executor`. Phân tầng `Page -> Component -> Hook -> API` kiểm bằng `dependency-cruiser` trong bước lint.
+- Anime.js v4 (ghi chú 2026-11-04): mã animation chỉ nằm trong custom hook (tầng Hook), dùng scope của Anime.js trong `useEffect` có dọn dẹp khi unmount; Page/Component không gọi trực tiếp. Mọi animation tôn trọng `prefers-reduced-motion`. Thời lượng, easing, stagger lấy từ hằng số chuyển động dùng chung bắt nguồn từ phần motion của bản thiết kế; executor không tự đặt giá trị. Chỉ import module Anime.js cần dùng.
+- Skill Anime.js: tra Context7 trước (bắt buộc); skill cộng đồng `BowTiedSwan/animejs-skills` (MIT) là tùy chọn: đọc `SKILL.md` + `references/`, **KHÔNG chạy `install.sh`**, chỉ chép `SKILL.md` + `references/` vào `.claude/skills/animejs/` và commit.
+- Rủi ro cần thử sớm: cạnh React Flow là SVG do React render lại, có thể xung đột với Anime.js trên cùng phần tử; làm bản thử nhỏ trước khi áp dụng rộng.
+- Khi tới M5, các tiêu chí 11–16 và 18 hết N/A và phải có phương án cụ thể trong kế hoạch M5 (code splitting theo `features/<feature>`, lazy Page/Dialog/thư viện đồ thị, selector nguyên tử, debounce tìm kiếm/kéo thả, minify + tree-shaking, defer script, `axe-core` trong Playwright E2E + ngân sách bundle); tiêu chí 2 thêm TanStack Query `staleTime`/`gcTime`, tiêu chí 10 thêm virtualization.
+
+Ngân sách bộ nhớ compose (M0 áp dụng; tổng 3200m, giữ nguyên đến khi có số liệu `docker stats` trên desktop; giới hạn WSL2 khoảng 12 GB):
 
 | Container | `mem_limit` | Giới hạn bên trong |
 | :--- | :--- | :--- |
@@ -138,11 +167,11 @@ Ngân sách bộ nhớ compose (M0 áp dụng; tổng ≤ ~3,5 GB trong giới h
 | scanner-service | 512m | `JAVA_TOOL_OPTIONS=-Xms128m -Xmx256m -XX:MaxMetaspaceSize=160m -Xss512k -XX:+UseSerialGC` |
 | topology-service | 640m | `-Xms128m -Xmx384m -XX:MaxMetaspaceSize=160m -Xss512k -XX:+UseSerialGC` |
 | ai-mcp-service | 384m | `-Xms64m -Xmx192m -XX:MaxMetaspaceSize=128m -Xss512k -XX:+UseSerialGC` |
-| **Tổng** | **3200m (~3,1 GB)** | Còn ~2,5 GB trong WSL2 cho Testcontainers |
+| **Tổng** | **3200m (~3,1 GB)** | Còn khoảng 8–9 GB trong WSL2 ~12 GB cho Testcontainers, Gradle daemon và Phase 2 |
 
-Ghi chú vận hành: không chạy E2E (khi có frontend) lúc toàn bộ stack đang bật; chạy `./gradlew check` (Testcontainers) khi đã tắt stack compose dev hoặc chỉ bật phần cần thiết. Con số trên là điểm xuất phát; `Sonnet Executor` M0 đo `docker stats` sau khi khởi động và báo lại nếu container nào vượt 90% giới hạn (không tự nâng giới hạn quá tổng 3,5 GB).
+Ghi chú vận hành: khuyến nghị (không bắt buộc) tắt stack compose dev hoặc chỉ bật phần cần thiết khi chạy `./gradlew check` (Testcontainers) hoặc E2E (khi có frontend), để số liệu đo gọn và tránh tranh cổng. Con số trên là điểm xuất phát; `Sonnet Executor` M0 (hoặc người chạy tiêu chí (ii) trên desktop) đo `docker stats` sau khi khởi động và báo lại nếu container nào vượt 90% giới hạn; không tự nâng giới hạn, mọi thay đổi ngân sách cần số liệu thật và được `Opus Architect` duyệt.
 
-Thứ tự: M0 chạy trước một mình (các module khác phụ thuộc build gốc và record). Sau khi M0 qua test, M1–M4 chạy song song, mỗi module một worktree. Không module nào sửa thư mục của module khác; cần đổi hợp đồng → dừng, báo Tier 2.
+Thứ tự: M0 chạy trước một mình (các module khác phụ thuộc build gốc và record). Sau khi M0 qua tiêu chí (i) trong cloud, M1–M4 chạy song song, mỗi module một worktree; phần test cần Docker của từng module chạy trên desktop theo tiêu chí (ii). M5 chưa nằm trong đợt này. Không module nào sửa thư mục của module khác; cần đổi hợp đồng → dừng, báo Tier 2.
 
 ### 5. Phương án 18 tiêu chí (AGENTS.md 2.3)
 
@@ -151,13 +180,13 @@ Thứ tự: M0 chạy trước một mình (các module khác phụ thuộc buil
 | 1 | Server-side caching | Redis cho kết quả đồ thị/blast radius/ai-context (D7). Kết quả tra token không cache (luôn qua index unique). |
 | 2 | Cache API responses | ETag `"g<graph_version>"` + `Cache-Control: no-cache` + 304 cho mọi GET đồ thị ở topology và `/api/v1/ingest/ai-context`. Phần TanStack Query: N/A ở MVP vì chưa có client. |
 | 3 | Compress payloads | Nén do Spring đảm nhiệm (MVP không có Traefik/reverse proxy): `server.compression.enabled=true` (mime `application/json,application/problem+json`, `min-response-size=2KB`) ở cả 3 service. |
-| 4 | Load balancer | Áp dụng một phần: service phi trạng thái (không session, state ở Postgres/Redis/Kafka), Actuator `/actuator/health/liveness` và `/readiness` (readiness gồm db, redis, kafka), compose `healthcheck` dùng các endpoint này. Reverse proxy và cân bằng tải nhiều instance: N/A vì chạy 1 instance mỗi service trên 1 laptop, không có Traefik trong MVP. |
-| 5 | CDN | N/A: công cụ nội bộ trên 1 laptop, chỉ truy cập qua `localhost`, MVP chưa có tài nguyên tĩnh. |
+| 4 | Load balancer | Áp dụng một phần: service phi trạng thái (không session, state ở Postgres/Redis/Kafka), Actuator `/actuator/health/liveness` và `/readiness` (readiness gồm db, redis, kafka), compose `healthcheck` dùng các endpoint này. Reverse proxy và cân bằng tải nhiều instance: N/A vì chạy 1 instance mỗi service trên 1 máy chủ desktop, không có Traefik trong MVP. |
+| 5 | CDN | N/A: công cụ nội bộ trên 1 máy chủ desktop, chỉ truy cập qua `localhost`, MVP chưa có tài nguyên tĩnh. |
 | 6 | Index DB | Toàn bộ index liệt kê ở D1, nằm trong migration V1. JSONB chỉ được trả ra, không lọc nên chưa cần GIN. |
 | 7 | Cache expensive queries | Blast radius `WITH RECURSIVE` và tổng hợp đồ thị đi qua cache D7; invalidation bằng `graph_version`. |
 | 8 | N+1 | Batch insert node/contract/topic/edge bằng `foreach` (chia lô 500); stitching bằng 1 câu `UPDATE ... FROM`; đọc đồ thị bằng JOIN trong cùng `topology_db` hoặc `WHERE IN`; mỗi tool MCP gọi đúng 1 endpoint. Cấm gọi Mapper/REST trong vòng lặp. |
 | 9 | Connection pool | HikariCP: scanner `maximum-pool-size=5`, topology `8`, `minimum-idle=1`, `idle-timeout=300000`, `connection-timeout=5000`, `max-lifetime=1800000`; Postgres `max_connections=50`. ai-mcp-service không có DB. Redis Lettuce dùng chung 1 kết nối mặc định. |
-| 10 | Phân trang | Admin list dùng cursor (`limit` mặc định 50, tối đa 200). Tool/endpoint đồ thị có `limit` (mặc định 100, tối đa 500) + `truncated`. Không endpoint nào trả toàn bảng. Virtualization UI: N/A (chưa có client). |
+| 10 | Phân trang | Áp dụng một phần: kỹ thuật theo từng kiểu dữ liệu ở bảng ngay dưới. Không endpoint nào trả toàn bảng. Virtualization UI: N/A (chưa có client, áp dụng ở M5). |
 | 11 | Code splitting | N/A: MVP không có frontend. |
 | 12 | Lazy loading | N/A: MVP không có frontend. (Phía server: `spring.main.lazy-initialization` không bật vì làm chậm phát hiện lỗi cấu hình.) |
 | 13 | Re-render | N/A: MVP không có frontend. |
@@ -167,7 +196,20 @@ Thứ tự: M0 chạy trước một mình (các module khác phụ thuộc buil
 | 17 | Unused dependencies | Mỗi module tự rà `build.gradle.kts` trước khi báo xong; M0 thêm plugin `com.autonomousapps.dependency-analysis` ở root, chạy `./gradlew buildHealth` trong bước lint. |
 | 18 | Accessibility & bundle budget | N/A: MVP không có giao diện web. Khi có client: `axe-core` (`@axe-core/playwright`) trong Playwright E2E + ngân sách dung lượng bundle khi build; Lighthouse chỉ chạy thủ công, tùy chọn. |
 
-Danh sách N/A (đề xuất, chờ Chủ dự án xác nhận): tiêu chí 5, 11–16, 18 N/A; tiêu chí 2, 4, 10 áp dụng một phần.
+Kỹ thuật phân trang theo từng kiểu dữ liệu (tiêu chí 10, `AGENTS.md` Mục 2.3), đối chiếu `contracts/ingestion-api.openapi.yaml` và `contracts/mcp-tools.md`:
+
+| Danh sách / endpoint MVP | Kiểu dữ liệu | Kỹ thuật | Tham số và khóa sắp xếp | Index hỗ trợ |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET /api/v1/admin/repositories/{repoId}/snapshots` (`listSnapshots`) | Lớn, chỉ-thêm, thứ tự thời gian (snapshot quét) | Cursor-based keyset + cửa sổ thời gian | `limit` (mặc định 50, tối đa 200), `cursor` opaque mã hóa `(created_at, snapshot_id)` của dòng cuối, `from` (gồm) / `to` (không gồm) theo `created_at`; `WHERE repo_id=? AND (created_at, snapshot_id) < (?, ?) AND created_at >= :from AND created_at < :to ORDER BY created_at DESC, snapshot_id DESC LIMIT :limit+1`; không dùng `OFFSET` | `(repo_id, created_at DESC, snapshot_id)` (D1) |
+| `GET /api/v1/admin/groups` (`listGroups`) | Nhỏ, ổn định | Keyset `cursor` + `limit` tối đa 200 (giữ theo hợp đồng hiện có; `AGENTS.md` chỉ giới hạn offset cho danh sách nhỏ, không bắt buộc offset). Không cần `from`/`to` | `cursor` mã hóa `name` của dòng cuối; `WHERE name > ? ORDER BY name LIMIT :limit+1` | `UNIQUE(name)` (D1), không thêm index |
+| `GET /api/v1/admin/groups/{groupId}/repositories` (`listRepositories`) | Nhỏ, ổn định | Như trên | `WHERE group_id=? AND name > ? ORDER BY name` | `UNIQUE(group_id, name)` (D1) phủ cả lọc lẫn sắp xếp |
+| Tool `get_service_topology` / `GET /internal/v1/topology` | Đồ thị (không phải danh sách phẳng) | `limit` + cờ `truncated`, không phân trang tiếp | `limit` mặc định 100, tối đa 500, áp cho số node; edges chỉ giữa node trả về | index D1 của `service_node`, `dependency_edge` |
+| Tool `analyze_breaking_change` / `POST /internal/v1/impact` | Đồ thị đệ quy | `limit` + `truncated`, `max_depth` ≤ 5 | như hợp đồng | như trên |
+| Tool `get_topic_subscribers` / `GET /internal/v1/topics/{topic}/subscribers` | Danh sách nhỏ theo topic | `limit` + `truncated` | mặc định 100, tối đa 500 | `UNIQUE(group_id, broker_type, topic_name)`, `(topic_id, interaction_type)` |
+| `ai-architecture-context.json` (`GET /internal/v1/ai-context`, `GET /api/v1/ingest/ai-context`) | Tài liệu tổng hợp một lần | Giới hạn kích thước < 512 KB + `truncated` (cắt schema trước) | `service_key`, `depth` tùy chọn | — |
+| Sự kiện Kafka, audit log, thông báo | Lớn, chỉ-thêm | Không có API liệt kê ở MVP. Khi thêm ở Phase 2 (`users_db.AUDIT_LOG`, `NOTIFICATION`): bắt buộc cursor keyset + `from`/`to` như `listSnapshots` | — | sẽ định nghĩa trong migration Phase 2 |
+
+Danh sách N/A (đã xác nhận 2026-11-12): tiêu chí 5, 11–16, 18 N/A; tiêu chí 2, 4, 10 áp dụng một phần. Các mục này hết N/A khi tới M5 (xem ghi chú M5 ở Mục 4).
 
 ### 6. Chiến lược kiểm thử MVP
 
@@ -177,15 +219,16 @@ Danh sách N/A (đề xuất, chờ Chủ dự án xác nhận): tiêu chí 5, 1
 - M2: unit test Service (token hash, idempotent, sai repo → 403); test Mapper và Flyway bằng Testcontainers PostgreSQL; MinIO/Kafka mock ở unit, Testcontainers Kafka cho 1 test tích hợp publish.
 - M3: test Mapper + migration bằng Testcontainers PostgreSQL; test stitching (khớp có hint, không hint, mất contract → `is_breaking_risk`), blast radius (nhiều tầng, vòng lặp, `max_depth`), consumer idempotent (event trùng), sha256 lệch → DLT.
 - M4: test 3 tool với `MockRestServiceServer`, kiểm tra `isError` khi 404, token sai → 401.
-- Testcontainers cần Docker Desktop đang chạy; chạy khi stack compose dev đã tắt để không vượt giới hạn WSL2 ~6 GB. CI chạy trên runner tự host của chính laptop, gọi `localhost`. Sau khi M1–M4 qua: một kịch bản smoke thủ công trong `markdown/TESTING.md` (compose up → đăng ký repo → `scanner-cli scan/push` trên fixture → gọi tool MCP).
+- Nơi chạy: phiên cloud chỉ chạy được biên dịch, unit test và test hợp đồng (không có Docker daemon). Testcontainers, Flyway trên Postgres thật và smoke test chạy trên desktop, cần Docker Desktop đang chạy; WSL2 ~12 GB đủ chạy cùng stack compose dev, tắt stack khi chạy test chỉ là khuyến nghị. Test cần Docker được gắn tag JUnit (vd `@Tag("docker")`) để phiên cloud loại trừ được mà không đánh dấu sai là đạt. CI chạy trên runner tự host đặt trên desktop, gọi `localhost`. Sau khi M1–M4 qua: một kịch bản smoke thủ công trong `markdown/TESTING.md` (compose up → đăng ký repo → `scanner-cli scan/push` trên fixture → gọi tool MCP).
 - Sau `[REVIEW_PASSED]`: `/claude-security scan changes` (effort high).
 
 ### 7. Rủi ro
 
-- Điều kiện tiên quyết của M0 (Chủ dự án tự làm, câu 7 đã trả lời): cài Gradle một lần để sinh wrapper; Docker Desktop phải đang chạy cho compose và Testcontainers. Thiếu một trong hai thì M0 dừng và báo lại, `Sonnet Executor` không tự tải Gradle.
-- RAM laptop (16 GB, WSL2 ~6 GB): stack + Testcontainers + Gradle daemon có thể tràn bộ nhớ. Giảm thiểu: ngân sách `mem_limit`/heap ở M0, `org.gradle.jvmargs=-Xmx1g`, chạy test khi tắt stack dev, không chạy E2E khi toàn bộ stack bật.
-- Laptop ngủ hoặc gập nắp làm runner CI và stack dừng; Windows 10 đã hết hỗ trợ tiêu chuẩn. Giảm thiểu theo `SETUP.md` (tắt ngủ khi cắm điện, mọi cổng bind `127.0.0.1`).
-- Phiên AI ngoài laptop (vd: phiên cloud) không gọi được MCP `localhost` → dùng `ai-architecture-context.json` làm artifact CI (D10).
+- Điều kiện tiên quyết của M0: Gradle wrapper (nguồn sinh wrapper là câu hỏi mở số 8, Mục 8); Docker Desktop đang chạy trên desktop cho tiêu chí (ii) của M0. Thiếu điều kiện nào thì phần tương ứng dừng và báo lại; `Sonnet Executor` không tự tải bản phân phối Gradle từ mạng.
+- Desktop phải bật khi dùng: máy tắt hoặc ngủ thì stack, runner CI và Remote Control dừng. Giảm thiểu theo `SETUP.md` mục 2026-11-12: tắt ngủ khi cắm điện, đặt giờ hoạt động (active hours) và tắt tự khởi động lại của Windows Update (có thể khởi động lại ngoài ý muốn), cho Docker Desktop tự khởi động khi đăng nhập, compose đặt `restart: unless-stopped`.
+- Chưa xác minh trên desktop: ảo hóa trong BIOS (Intel VT-x) đã bật chưa, Docker Desktop đã cài chưa; desktop đang offline nên chưa đo `docker stats`. Tiêu chí (ii) của M0 bị chặn đến khi Chủ dự án làm xong các bước một lần trong `SETUP.md`.
+- RAM: desktop 32 GB, WSL2 ~12 GB nên rủi ro tràn bộ nhớ thấp; vẫn giữ ngân sách `mem_limit`/heap ở M0 và `org.gradle.jvmargs=-Xmx1g` để laptop 16 GB chạy được làm dự phòng.
+- Phiên AI ngoài máy chủ desktop (vd: phiên cloud) không gọi được MCP `localhost` → dùng `ai-architecture-context.json` làm artifact CI (D10).
 - Phân tích tĩnh bỏ sót URL động (PRD mục 8): đánh dấu `resolution=DYNAMIC` và đưa vào `warnings`, cạnh không nối được hiện ở `unresolved_edges` thay vì bị bỏ.
 - Ngữ nghĩa blast radius tầng ≥ 2 là xấp xỉ theo service (dương tính giả), đã ghi rõ trong hợp đồng tool.
 - Bảng `topology_db` tăng theo số lần quét vì giữ mọi snapshot (để làm Architecture Diff sau này); dọn dữ liệu (retention) để Phase 2.
@@ -196,17 +239,23 @@ Danh sách N/A (đề xuất, chờ Chủ dự án xác nhận): tiêu chí 5, 1
 
 Đã trả lời (phản hồi ngày 2026-11-03):
 
-- Câu 1 (CI gọi Ingestion API): runner tự host trên chính laptop, gọi `localhost`; không mở đường HTTPS công khai.
-- Câu 7 (Gradle): Chủ dự án tự cài Gradle một lần để sinh wrapper; Docker Desktop phải chạy cho Testcontainers.
+- Câu 1 (CI gọi Ingestion API): runner tự host trên chính máy chủ (nay là desktop, quyết định 2026-11-12), gọi `localhost`; không mở đường HTTPS công khai.
+- Câu 7 (Gradle): Chủ dự án tự cài Gradle một lần để sinh wrapper; Docker Desktop phải chạy cho Testcontainers. (Nguồn sinh wrapper được hỏi lại ở câu 8 vì phiên cloud nay có Gradle.)
 - Thời điểm cấu hình secret: thiết lập ngay, Chủ dự án tự chạy script sinh `infra/.env` (xem Mục 9).
 
-Chưa trả lời (đề xuất, chờ Chủ dự án xác nhận):
+Đã trả lời (phản hồi ngày 2026-11-12, đã xác nhận 2026-11-12):
 
-2. Đồng ý chuyển `SYSTEM_GROUP` sang `scanner_db`, tách `keycloak_group_id`/`netbird_group_id` sang `users_db.group_binding` ở Phase 2 (D1)?
-3. Đồng ý scanner CLI MVP chỉ quét Java/Spring bằng JavaParser, hoãn Tree-sitter/Axios/gRPC/OpenAPI (D4)?
-4. Đồng ý hoãn API Gateway sang Phase 2 (D9)?
-5. Đồng ý Java 21 + Spring Boot 4.1.x (D11)?
-6. Duyệt danh sách N/A: tiêu chí 5 (CDN, chỉ `localhost`), 11–16 và 18 (Accessibility & bundle budget) N/A vì chưa có frontend; tiêu chí 2, 4 (không reverse proxy, 1 instance), 10 áp dụng một phần (mục 5).
+2. D1: đồng ý chuyển `SYSTEM_GROUP` sang `scanner_db`; `keycloak_group_id`/`netbird_group_id` tách sang `users_db.group_binding` ở Phase 2.
+3. D4: đồng ý scanner CLI MVP chỉ quét Java/Spring bằng JavaParser; hoãn Tree-sitter/Axios/gRPC/OpenAPI/AsyncAPI sang Phase 2.
+4. D9: đồng ý hoãn API Gateway sang Phase 2 cùng Keycloak/JWT.
+5. D11: đồng ý Java 21 LTS + Spring Boot 4.1.x; số phiên bản thư viện do `Sonnet Executor` M0 kiểm tra trên Maven Central.
+6. Danh sách N/A: tiêu chí 5, 11–16, 18 N/A; tiêu chí 2, 4, 10 áp dụng một phần (Mục 5). Mục N/A đã duyệt không bị `[REJECTED]`.
+- Máy chủ chạy ứng dụng: desktop, laptop làm máy khách/dự phòng (D13).
+
+Chưa trả lời (cần quyết định tại Cổng Xác nhận):
+
+8. Gradle wrapper: cho phép `Sonnet Executor` M0 sinh wrapper ngay trong phiên cloud bằng Gradle 8.14.3 có sẵn (`gradle wrapper --gradle-version <bản ổn định mới nhất tương thích Spring Boot 4.1>`, commit `gradlew*` + `gradle/wrapper/*`), thay cho việc Chủ dự án tự cài Gradle trên desktop? Khuyến nghị: **cho phép** (không cần desktop online, wrapper độc lập máy; desktop chỉ cần JDK 21). Nếu không, M0 dừng ở bước wrapper chờ Chủ dự án.
+9. Phê duyệt chính thức toàn bộ kế hoạch MVP (gồm bản sửa lần 2) để bắt đầu M0.
 
 ### 9. Biến môi trường / secret Chủ dự án tự cấu hình
 
@@ -224,7 +273,7 @@ Chỉ liệt kê tên, không có giá trị mặc định. Chủ dự án chọ
 | `DEVMAPPER_INTERNAL_TOKEN` | scanner-service, topology-service, ai-mcp-service |
 | `DEVMAPPER_MCP_TOKEN` | ai-mcp-service và `.mcp.json` của người dùng |
 | `DEVMAPPER_INGESTION_TOKEN` | secret CI của từng repo đích; chưa sinh, cấp qua admin API sau khi scanner-service chạy (mỗi repo một token) |
-| `DEVMAPPER_API_URL` | biến CI (không nhạy cảm); chưa đặt, mặc định phía CI `http://localhost:8081` vì runner tự host trên cùng laptop |
+| `DEVMAPPER_API_URL` | biến CI (không nhạy cảm); chưa đặt, mặc định phía CI `http://localhost:8081` vì runner tự host trên cùng máy chủ desktop |
 
 Biến không nhạy cảm (có giá trị mặc định trong `application.yml`, không cần hỏi): `KAFKA_BOOTSTRAP_SERVERS`, `DB_HOST`, `REDIS_HOST`, `MINIO_ENDPOINT`, `SCANNER_BASE_URL`, `TOPOLOGY_BASE_URL`.
 
@@ -342,3 +391,18 @@ Chủ dự án chốt: máy chủ chạy ứng dụng là desktop (i5-11400F 6 n
 - Rủi ro mới: desktop phải bật khi dùng, tắt ngủ khi cắm điện, Windows Update có thể tự khởi động lại.
 
 Chưa xác minh: ảo hóa trong BIOS đã bật chưa, Docker Desktop đã cài chưa.
+
+## **2026-11-12** -- Bản sửa kế hoạch MVP lần 2 (chờ Cổng Xác nhận)
+
+Lượt duyệt lại của `Opus Architect` theo phản hồi câu 2–6 và quyết định máy chủ desktop cùng ngày. Sửa tại chỗ mục "Kế hoạch MVP chính thức"; các mục lịch sử phía trên giữ nguyên. Toàn bộ kế hoạch vẫn CHƯA được phê duyệt chính thức, chưa viết code.
+
+- Mục 2: sơ đồ Mermaid đổi khối máy chủ sang desktop (i5-11400F, 32 GB, Windows 11 Pro), runner CI tự host trên desktop, thêm nút laptop Razer Blade 14 là máy khách/dự phòng truy cập qua Remote Desktop/SSH tunnel (NetBird Cloud Phase 2); cây thư mục thêm `client/` (M5, chưa tạo).
+- Mục 3: đoạn trạng thái và nhãn D1, D4, D9, D11 đổi thành "đã xác nhận 2026-11-12", nhắc lại kế hoạch vẫn chờ phê duyệt chính thức. D1: bỏ `TEST_TRACE_ARTIFACT`, `SECURITY_REPORT` khỏi danh sách bảng `users_db` Phase 2, ghi `users_db` (`user-service`), thêm câu không có bảng/bucket/tiền tố MinIO cho báo cáo Playwright hay Claude Security. D3: runner trên desktop. D9: bỏ chữ "trên laptop". D13 viết lại toàn bộ theo desktop (WSL2 ~12 GB, giữ `mem_limit` 3200m đến khi có `docker stats` thật, tắt stack khi chạy Testcontainers chỉ là khuyến nghị, runner CI và Remote Control trên desktop, compose/`.env` độc lập máy, cổng bind `127.0.0.1`, phiên cloud không có Docker daemon).
+- Mục 4: M0 thêm `.github/workflows/` vào thư mục được sửa và đầu ra `ci.yml` cho runner tự host (trước đây kế hoạch thiếu workflow CI dù `AGENTS.md` Mục 3 yêu cầu), compose thêm `restart: unless-stopped` và yêu cầu độc lập máy; M2 ghi kỹ thuật phân trang theo bảng tiêu chí 10; thêm hàng M5 Frontend (chưa thực hiện) và đoạn ghi chú M5 (DESIGN_BRIEF + bản thiết kế Claude Design ở phiên khác, đồng hóa UI ngoại lai, `dependency-cruiser`, quy tắc Anime.js ngày 2026-11-04, tiêu chí 11–16, 18 áp dụng khi tới M5); thêm tiêu chí nghiệm thu M0 tách đôi (i) cloud, (ii) desktop; bảng ngân sách giữ 3200m, chú thích theo WSL2 ~12 GB; ghi chú vận hành hạ thành khuyến nghị; thứ tự module: M1–M4 mở sau khi M0 đạt (i).
+- Mục 5: tiêu chí 4, 5 đổi "laptop" thành "máy chủ desktop"; tiêu chí 10 thêm bảng kỹ thuật phân trang theo từng kiểu dữ liệu (snapshot: cursor keyset + `from`/`to`; group/repo: keyset theo `name` khớp index unique sẵn có; endpoint đồ thị: `limit` + `truncated`; ai-context: giới hạn kích thước + `truncated`; sự kiện/audit/thông báo: chưa có API ở MVP, Phase 2 bắt buộc keyset + `from`/`to`); dòng danh sách N/A đổi thành "đã xác nhận 2026-11-12".
+- Mục 6: tách nơi chạy test (cloud: biên dịch/unit/hợp đồng; desktop: Testcontainers, Flyway, smoke), test cần Docker gắn tag JUnit `docker`, runner trên desktop.
+- Mục 7: bỏ rủi ro RAM laptop và laptop ngủ/Windows 10; thêm rủi ro desktop phải bật (tắt ngủ khi cắm điện, Windows Update tự khởi động lại), ảo hóa BIOS và Docker Desktop chưa xác minh, desktop offline chưa đo; điều kiện tiên quyết Gradle trỏ tới câu hỏi mở số 8.
+- Mục 8: câu 2–6 và quyết định máy chủ chuyển sang "Đã trả lời"; thêm câu 8 (cho phép sinh Gradle wrapper trong phiên cloud, khuyến nghị cho phép) và câu 9 (phê duyệt chính thức).
+- Mục 9: `DEVMAPPER_API_URL` ghi runner trên desktop. Không phát sinh biến môi trường hay secret mới.
+- `contracts/ingestion-api.openapi.yaml`: `listSnapshots` thêm tham số `from`/`to` (component `From`, `To`) và phản hồi 400/401/404; mô tả "laptop" đổi thành "máy chủ desktop". `contracts/mcp-tools.md`: câu ví dụ `.mcp.json` đổi "laptop" thành "máy chủ desktop".
+- `SETUP.md`: thêm mục 2026-11-12 về việc cần làm một lần trên desktop.

@@ -83,3 +83,19 @@ fi
 rm -rf "$t"
 exit 0
 ```
+
+## **2026-11-12** -- Máy chủ desktop: việc cần làm một lần
+
+Máy chủ chạy ứng dụng chuyển sang desktop (i5-11400F 6 nhân/12 luồng, 32 GB DDR4, SSD, Windows 11 Pro), luôn bật. Laptop Razer Blade 14 thành máy khách và dự phòng; mục "Chạy toàn bộ trên laptop" ngày 2026-11-04 chỉ còn áp dụng khi chạy dự phòng trên laptop. Desktop đang offline nên các bước dưới đây chưa làm và chưa xác minh; do Chủ dự án tự làm, agent không làm hộ.
+
+1. BIOS: bật ảo hóa Intel VT-x (thường tên "Intel Virtualization Technology"); kiểm tra trong Task Manager, tab Performance, CPU, dòng "Virtualization: Enabled".
+2. WSL2: `wsl --install` (nếu chưa có), rồi tạo `C:\Users\<tên user>\.wslconfig` với `[wsl2]` và `memory=12GB`, chạy `wsl --shutdown` để áp dụng.
+3. Docker Desktop: cài bản dùng WSL2 backend, bật "Start Docker Desktop when you sign in"; kiểm tra bằng `docker info`.
+4. Nguồn điện: tắt Sleep khi cắm điện (Settings, System, Power), tắt ngủ đông nếu cần.
+5. Windows Update: đặt Active hours bao trùm giờ dùng, và trong Advanced options tắt tự khởi động lại ngoài giờ khi có người đăng nhập (hoặc tạm dừng cập nhật khi đang chạy việc dài); kiểm tra lại stack sau mỗi lần cập nhật.
+6. JDK 21 trên desktop (cho Gradle wrapper và Testcontainers chạy ngoài container).
+7. Runner GitHub Actions tự host: trong repo GitHub, Settings, Actions, Runners, New self-hosted runner (Windows), làm theo lệnh `config.cmd` hiển thị ở đó và cài thành service. Token đăng ký chỉ dùng một lần, nhập trực tiếp trên máy, không lưu vào repo hay chat.
+8. Remote Control: chia sẻ thư mục repo trên desktop (Claude desktop app, Settings, Claude Code, Remote Control) để phiên cloud dùng được khi desktop online.
+9. Truy cập từ laptop: bật Remote Desktop trên desktop (Windows 11 Pro), hoặc SSH tunnel tới các cổng `127.0.0.1`; không mở cổng dịch vụ ra mạng ngoài. NetBird Cloud là tùy chọn từ Phase 2.
+
+Sau khi xong: chạy tiêu chí nghiệm thu (ii) của M0 trong `PLAN.md` (`docker compose up`, `docker stats` so với ngân sách 3200m, báo container vượt 90%).
