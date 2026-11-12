@@ -434,3 +434,5 @@ Hệ quả cho thiết kế: nhắn tin giữa phiên là kênh THÔNG BÁO, ch�
 2. Quy tắc thường trực trong `AGENTS.md` (chỉ thị của Chủ dự án) nêu rõ: CR từ phiên nào trong roster, loại thay đổi nào được tự áp dụng, tài liệu nào chỉ chủ sở hữu được ghi. Điều kiện: phiên nhận phải nạp quy tắc này lúc khởi động (file nằm trên nhánh của nó hoặc đã vào `main` trước khi phiên bắt đầu); phiên đang chạy sẽ không biết. Rủi ro: mở bề mặt prompt injection ngang hàng, nên cần Chủ dự án duyệt từng câu chữ.
 
 Chưa quyết: có viết quy tắc thường trực (cách 2) vào `AGENTS.md` hay giữ cách 1 trong giai đoạn đầu.
+
+Cập nhật cùng ngày: vòng gửi–nhận đã hoàn tất. Stage 2 trả lời "CR-001 ack" bằng `send_message`, nói rõ tin của Stage 1 đã đánh thức nó từ trạng thái rảnh (đến dưới dạng thông báo xếp hàng); tin trả lời này cũng đánh thức Stage 1 đang rảnh. Stage 2 chỉ trả lời sau khi có chỉ dẫn ở phiên đó (nhiều khả năng từ Chủ dự án, vì trước đó nó từ chối tự hành động), đúng với cách 1. Stage 1 không gửi lại xác nhận cho ack để tránh vòng lặp.
