@@ -290,3 +290,21 @@ Chủ dự án chốt: Playwright và Trace Viewer chỉ dùng khi lập trình 
 ## **2026-11-05** -- Claude Security chỉ là công cụ lập trình (cần chỉnh kế hoạch khi duyệt lại)
 
 Chủ dự án chốt: Claude Security chỉ dùng ở giai đoạn lập trình, ứng dụng không lưu hay hiển thị báo cáo bảo mật. Đã sửa `PRD.md` (bỏ mục 5.4 cũ, đánh số lại), `SRS.md` (FR-4 đã loại bỏ, giữ số hiệu), `ERD.md` (bỏ bảng `SECURITY_REPORT`). `Opus Architect` cần bỏ `SECURITY_REPORT` cùng `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `users_db` Phase 2 trong D1, và không dành chỗ trong MinIO cho báo cáo bảo mật khi duyệt lại kế hoạch.
+
+## **2026-11-12** -- Ý tưởng chờ (backlog): ghi chú thay đổi giữa các phiên agent
+
+Trạng thái: chỉ là ý tưởng, chưa thực hiện, chưa đưa vào kế hoạch MVP. Chủ dự án yêu cầu cất lại để gọi sau.
+
+Ý tưởng: khi Chủ dự án nói với một agent (vd: Designer ở giai đoạn 2) về điều thuộc quyền sở hữu của agent khác (vd: Planner ở giai đoạn 1), agent đầu gửi cho chủ sở hữu một yêu cầu thay đổi (CR) rất ngắn thay vì để các phiên đọc chat của nhau. Chủ sở hữu điều chỉnh tài liệu của mình, báo lại một dòng; agent gửi CR cất ý tưởng vào mục "chờ tái sử dụng" và chỉ đọc lại khi gặp tác vụ phù hợp. Việc viết code sau đó giao cho Executor của module bị ảnh hưởng.
+
+Hướng đề xuất đã thảo luận (chưa chốt):
+
+- Mỗi tài liệu có một chủ sở hữu: `PLAN.md` và `contracts/` thuộc `Opus Architect`, `DESIGN_BRIEF.md` thuộc Designer, mỗi thư mục module thuộc Executor của module đó.
+- CR dài tối đa khoảng 10 dòng: ID, người gửi, người nhận, tài liệu và phiên bản gốc, thay đổi đề nghị, lý do, có chặn việc không. Nội dung đi cùng tin nhắn (`send_message`), không cần tệp dùng chung hay polling.
+- Phân loại 2 tầng như hiện nay: bước Haiku xét CR nhỏ hay đổi kế hoạch thật, chỉ đổi kế hoạch thật mới đánh thức Opus; nhiều CR đến gần nhau được gộp, trừ CR chặn việc.
+- An toàn: CR chỉ sửa được bản nháp kế hoạch, không phê duyệt và không khởi động code (giữ Cổng Xác nhận); không có giá trị secret trong CR; chỉ chủ sở hữu ghi tài liệu của mình; xác nhận không sinh thêm tin nhắn, có giới hạn số bước; Chủ dự án thấy một dòng tóm tắt mỗi CR; CR có phiên bản gốc để loại bỏ khi tài liệu đã đổi.
+- Nơi đặt quy tắc: một skill ngắn cài qua setup script của môi trường (áp dụng mọi repo) cộng bảng vai trò và quyền sở hữu trong `AGENTS.md` của từng repo.
+
+Việc cần kiểm chứng trước khi làm: (1) `send_message` có đánh thức phiên đang rảnh không hay chỉ xếp hàng; (2) phiên có tìm được phiên khác theo vai trò không (bộ lọc tag của `list_sessions` có thể chỉ dành cho người gọi OAuth), nếu không thì phải truyền ID vai trò lúc tạo phiên.
+
+Câu hỏi cần Chủ dự án quyết định khi gọi lại: danh sách vai trò tách thành phiên riêng (có Reviewer không); Planner có được tự sửa bản nháp khi nhận CR không (đề xuất: có, giữ nguyên cổng phê duyệt); áp dụng cho mọi repo hay chỉ DevMapper trước (đề xuất: DevMapper trước).
