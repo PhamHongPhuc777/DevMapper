@@ -328,3 +328,17 @@ Vẫn còn mở, kế hoạch CHƯA được phê duyệt để viết code:
 - Phê duyệt chính thức của Chủ dự án tại Cổng Xác nhận.
 
 Ghi chú môi trường (kiểm tra ngày 2026-11-12): container cloud có Java 21.0.12, Gradle 8.14.3, Docker Compose CLI v5.6.1, 4 CPU, 15 GB RAM, nhưng KHÔNG có Docker daemon, nên compose stack và Testcontainers chưa chạy được trong phiên cloud. Laptop chưa chia sẻ thư mục nào qua Remote Control.
+
+## **2026-11-12** -- Quyết định máy chủ chạy ứng dụng: desktop (cần chỉnh D13 khi duyệt lại kế hoạch)
+
+Chủ dự án chốt: máy chủ chạy ứng dụng là desktop (i5-11400F 6 nhân/12 luồng, 32 GB DDR4, ổ SSD, Windows 11 Pro; RTX 2060 không dùng cho stack), chấp nhận để máy luôn bật. Laptop Razer Blade 14 chuyển thành máy khách và phương án dự phòng. Desktop hiện đang offline vì Chủ dự án vắng nhà, nên chưa đo thực tế và chưa gọi được qua Remote Control.
+
+`Opus Architect` cần chỉnh khi duyệt lại kế hoạch:
+
+- D13 viết lại theo desktop; giới hạn WSL2 đề xuất khoảng 12 GB (`.wslconfig`), chạy được stack MVP cùng Testcontainers và dư chỗ cho Phase 2 (Keycloak và các dịch vụ thêm).
+- Giữ nguyên ngân sách `mem_limit` 3200m của MVP, không nâng trước khi có số liệu `docker stats` thật; quy tắc "tắt stack khi chạy Testcontainers" hạ thành khuyến nghị.
+- Runner CI tự host và thư mục Remote Control đặt trên desktop; compose và `.env` giữ độc lập máy để laptop vẫn chạy được làm dự phòng.
+- Mọi cổng vẫn bind `127.0.0.1`; truy cập từ laptop qua Remote Desktop (Windows 11 Pro làm máy chủ được), SSH tunnel, hoặc NetBird Cloud về sau.
+- Rủi ro mới: desktop phải bật khi dùng, tắt ngủ khi cắm điện, Windows Update có thể tự khởi động lại.
+
+Chưa xác minh: ảo hóa trong BIOS đã bật chưa, Docker Desktop đã cài chưa.
