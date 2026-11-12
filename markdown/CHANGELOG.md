@@ -77,3 +77,7 @@ Thêm `contracts/README.md` mô tả mục đích, danh sách file và quy tắc
 ## **2026-11-12** -- Quy tắc Git cho phiên cloud
 
 `AGENTS.md` Mục 4 (Git Commit): phiên local giữ nguyên (Chủ dự án tự push/pull, trừ khi yêu cầu agent push); phiên cloud chỉ push lên nhánh làm việc, không push thẳng `main`, Chủ dự án merge.
+
+## **2026-11-12** -- Cài Graphify, UI-UX-Pro-Max, Headroom cho môi trường cloud
+
+Thêm setup script cho môi trường cloud `Buffoon777`: cài Graphify, UI-UX-Pro-Max (user scope) và Headroom (chỉ MCP) để mọi repo dùng được. Bật plugin Claude Security ở cấp tài khoản. `SETUP.md` ghi chi tiết và nội dung script; `CLAUDE.md` Mục 2 sửa lại phần mô tả phiên cloud (cloud có nạp plugin tài khoản và kỹ năng do setup script cài). `PLAN.md` thêm mục backlog về ghi chú thay đổi giữa các phiên agent.

@@ -20,7 +20,11 @@ Luồng: phiên chính điều phối → `opus-architect` lập kế hoạch �
 ## 2. Môi trường chạy
 
 - **Local (CLI):** có đủ plugin/skill/MCP cá nhân (Harness, Headroom, Ponytail, Claude Security, Graphify, UI-UX-Pro-Max, Context7 qua connector).
-- **Cloud session:** chỉ nạp những gì **commit trong repo** (`CLAUDE.md`, `.claude/agents|skills`, `.mcp.json`). Plugin và skill ở `~/.claude` **không** được nạp → đội ngũ trong `.claude/` vẫn chạy, nhưng Harness/Claude Security/Graphify/Headroom thì không. Context7 dùng qua `.mcp.json` hoặc connector claude.ai.
+- **Cloud session** nạp từ 3 nguồn:
+  1. Những gì **commit trong repo** (`CLAUDE.md`, `.claude/agents|skills`, `.mcp.json`): đội ngũ trong `.claude/` luôn chạy.
+  2. **Plugin cấp tài khoản claude.ai** đã bật: Harness, Ponytail, Claude Security.
+  3. **Setup script của môi trường `Buffoon777`** cài ở user scope: Graphify, UI-UX-Pro-Max, Headroom (chỉ MCP, công cụ hoãn nạp: nạp schema bằng ToolSearch trước khi gọi). Chi tiết và nội dung script ở `markdown/SETUP.md`. Môi trường `Default` không có script này.
+  Context7 dùng qua connector claude.ai (repo chưa có `.mcp.json`).
 - Bun lỗi proxy khi cài gói trong cloud → dùng `npm` trong SessionStart hook.
 
 ## Harness: DevMapper
@@ -36,3 +40,4 @@ Luồng: phiên chính điều phối → `opus-architect` lập kế hoạch �
 | :--- | :--- | :--- | :--- |
 | 2026-11-03 | Dựng đội ngũ Harness v2 lần đầu | `.claude/agents/*`, `.claude/skills/devmapper-orchestrator` | Bản Claude-only của AGENTS.md |
 | 2026-11-03 | Đổi tên agent theo model Claude (Opus Architect, Haiku Router, Haiku Monitor, Sonnet Executor) | `.claude/agents/*`, skill, `AGENTS.md` | Gần với môi trường Claude hiện dùng |
+| 2026-11-12 | Sửa Mục 2: cloud nạp plugin tài khoản và kỹ năng do setup script cài | `CLAUDE.md`, `markdown/SETUP.md` | Mô tả cũ ("cloud không nạp plugin") không còn đúng |
