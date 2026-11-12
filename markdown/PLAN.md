@@ -416,3 +416,21 @@ Hiệu lực: được phép bắt đầu viết code theo bảng module Mục 4
 Đã đồng bộ `SRS.md` và `PRD.md` theo các quyết định đã chốt: desktop là máy chủ, laptop là máy khách/dự phòng; API Gateway thêm từ Phase 2; scanner MVP dùng JavaParser, Tree-sitter từ Phase 2; tên `users_db`/`user-service` đã có sẵn ở cả hai file.
 
 Còn lệch, chưa sửa: `ERD.md` dòng 175 vẫn xếp `SYSTEM_GROUP` trong `users_db`, trong khi D1 đã chuyển sang `scanner_db`.
+
+## **2026-11-12** -- Kết quả thử nhắn tin giữa các phiên (tiếp mục backlog cùng ngày)
+
+Thử nghiệm: phiên Stage 1 (Planning) gửi CR-001 bằng `send_message` tới phiên Stage 2 (Designing), kèm yêu cầu trả lời "CR-001 ack".
+
+Đã kiểm chứng:
+
+- Tin nhắn được chuyển (`delivered`) và đánh thức phiên đang rảnh, trạng thái ngắt kết nối: container của Stage 2 dựng lại, phiên đọc tin sau khoảng 6 giây và chạy một lượt.
+- Phiên nhận KHÔNG tự thực hiện yêu cầu. Nó coi tin là dữ liệu (đúng cơ chế an toàn của hệ thống), tóm tắt nội dung cho Chủ dự án trong chat của nó và chờ lệnh; không có ack tự động.
+- Chi phí đánh thức Stage 2 khoảng 0,41 USD (ước tính từ số liệu `get_session`: 0,51 lên 0,92 USD, chủ yếu ghi lại cache sau khi container dựng lại). Phiên có ngữ cảnh lớn hơn sẽ tốn hơn, nên cần gộp CR.
+- Tìm phiên ngang hàng: `list_sessions` trả ID, tiêu đề, trạng thái. Danh sách lẫn phiên lưu trữ trùng tên và phiên của dự án khác, nên phải dùng roster theo ID, không dùng tiêu đề.
+
+Hệ quả cho thiết kế: nhắn tin giữa phiên là kênh THÔNG BÁO, chưa phải kênh ra lệnh. Có hai cách để phiên nhận hành động:
+
+1. Chủ dự án xác nhận một dòng ở phiên nhận (an toàn nhất, tốn ít token, giữ con người trong vòng lặp).
+2. Quy tắc thường trực trong `AGENTS.md` (chỉ thị của Chủ dự án) nêu rõ: CR từ phiên nào trong roster, loại thay đổi nào được tự áp dụng, tài liệu nào chỉ chủ sở hữu được ghi. Điều kiện: phiên nhận phải nạp quy tắc này lúc khởi động (file nằm trên nhánh của nó hoặc đã vào `main` trước khi phiên bắt đầu); phiên đang chạy sẽ không biết. Rủi ro: mở bề mặt prompt injection ngang hàng, nên cần Chủ dự án duyệt từng câu chữ.
+
+Chưa quyết: có viết quy tắc thường trực (cách 2) vào `AGENTS.md` hay giữ cách 1 trong giai đoạn đầu.
