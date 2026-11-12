@@ -406,3 +406,13 @@ Lượt duyệt lại của `Opus Architect` theo phản hồi câu 2–6 và qu
 - Mục 9: `DEVMAPPER_API_URL` ghi runner trên desktop. Không phát sinh biến môi trường hay secret mới.
 - `contracts/ingestion-api.openapi.yaml`: `listSnapshots` thêm tham số `from`/`to` (component `From`, `To`) và phản hồi 400/401/404; mô tả "laptop" đổi thành "máy chủ desktop". `contracts/mcp-tools.md`: câu ví dụ `.mcp.json` đổi "laptop" thành "máy chủ desktop".
 - `SETUP.md`: thêm mục 2026-11-12 về việc cần làm một lần trên desktop.
+
+## **2026-11-12** -- Phê duyệt kế hoạch MVP tại Cổng Xác nhận (câu 8 và 9)
+
+Chủ dự án trả lời: câu 8 đồng ý (Sonnet Executor M0 được sinh Gradle wrapper ngay trong phiên cloud bằng Gradle 8.14.3, không cần desktop online) và câu 9 phê duyệt chính thức toàn bộ kế hoạch MVP (bản sửa lần 2).
+
+Hiệu lực: được phép bắt đầu viết code theo bảng module Mục 4, M0 chạy trước một mình, sau khi M0 đạt tiêu chí (i) trên cloud thì mở M1–M4 song song. Tiêu chí (ii) của M0 (compose, Flyway, Testcontainers, smoke test) chờ desktop online và Chủ dự án làm xong danh sách việc một lần trong `SETUP.md`. Chưa có secret hay biến môi trường nào cần cấu hình lúc này: `infra/.env` do Chủ dự án tự sinh trên desktop, agent không đọc.
+
+Đã đồng bộ `SRS.md` và `PRD.md` theo các quyết định đã chốt: desktop là máy chủ, laptop là máy khách/dự phòng; API Gateway thêm từ Phase 2; scanner MVP dùng JavaParser, Tree-sitter từ Phase 2; tên `users_db`/`user-service` đã có sẵn ở cả hai file.
+
+Còn lệch, chưa sửa: `ERD.md` dòng 175 vẫn xếp `SYSTEM_GROUP` trong `users_db`, trong khi D1 đã chuyển sang `scanner_db`.

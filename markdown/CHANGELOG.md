@@ -81,3 +81,7 @@ Thêm `contracts/README.md` mô tả mục đích, danh sách file và quy tắc
 ## **2026-11-12** -- Cài Graphify, UI-UX-Pro-Max, Headroom cho môi trường cloud
 
 Thêm setup script cho môi trường cloud `Buffoon777`: cài Graphify, UI-UX-Pro-Max (user scope) và Headroom (chỉ MCP) để mọi repo dùng được. Bật plugin Claude Security ở cấp tài khoản. `SETUP.md` ghi chi tiết và nội dung script; `CLAUDE.md` Mục 2 sửa lại phần mô tả phiên cloud (cloud có nạp plugin tài khoản và kỹ năng do setup script cài). `PLAN.md` thêm mục backlog về ghi chú thay đổi giữa các phiên agent.
+
+## **2026-11-12** -- Phê duyệt kế hoạch MVP; đồng bộ SRS và PRD
+
+Chủ dự án phê duyệt kế hoạch MVP (bản sửa lần 2) và cho phép sinh Gradle wrapper trong cloud. `SRS.md` và `PRD.md`: máy chủ là desktop, laptop là máy khách/dự phòng; API Gateway thêm từ Phase 2; dòng phân tích mã tĩnh ghi JavaParser cho MVP và Tree-sitter từ Phase 2; rủi ro phần cứng viết lại theo desktop. Tên `users_db`/`user-service` đã đúng sẵn. `ERD.md` còn xếp `SYSTEM_GROUP` trong `users_db`, chờ sửa.

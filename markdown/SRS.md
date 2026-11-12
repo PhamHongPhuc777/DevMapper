@@ -52,11 +52,11 @@ Hệ thống tự động thu thập siêu dữ liệu kiến trúc từ nhiều
 
 ### 2.1 Bối cảnh sản phẩm
 
-DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Developer Platform module), không mở truy cập trực tiếp ra internet công khai. Toàn bộ các dịch vụ dữ liệu và ứng dụng được tự vận hành (self-hosted) trên một laptop duy nhất (MVP không dùng VPS), mọi cổng bind `127.0.0.1`; truy cập từ xa bằng NetBird là tùy chọn từ Phase 2.
+DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Developer Platform module), không mở truy cập trực tiếp ra internet công khai. Toàn bộ các dịch vụ dữ liệu và ứng dụng được tự vận hành (self-hosted) trên một máy chủ duy nhất là desktop (Windows 11 Pro, 32 GB RAM; MVP không dùng VPS), laptop chỉ là máy khách và phương án dự phòng, mọi cổng bind `127.0.0.1`; truy cập từ xa bằng NetBird là tùy chọn từ Phase 2.
 
 ### 2.2 Giả định và ràng buộc
 
-- Hệ thống Backend ứng dụng kiến trúc **Microservices** (gồm API Gateway, Scanner Service, Topology Service, AI-MCP Service, User Service) viết bằng Java (Spring Boot, MyBatis). Frontend phát triển bằng TypeScript/React.
+- Hệ thống Backend ứng dụng kiến trúc **Microservices** (gồm Scanner Service, Topology Service, AI-MCP Service, User Service; API Gateway thêm từ Phase 2 cùng Keycloak/JWT) viết bằng Java (Spring Boot, MyBatis). Frontend phát triển bằng TypeScript/React.
 - Toàn bộ các thành phần hạ tầng gồm **PostgreSQL, Redis, Apache Kafka, Keycloak, và MinIO** được đóng gói container và tự host trực tiếp trên PC.
 - **NetBird** và **Traefik** là tùy chọn từ Phase 2, chỉ thêm khi cần truy cập từ xa; NetBird dùng **NetBird Cloud** (không cần VPS), MVP không phụ thuộc vào chúng.
 - Quá trình phát triển tuân thủ nghiêm ngặt quy trình điều phối đa tác tử (`Harness`), tra cứu tài liệu thời gian thực (`Context7`), rà soát bảo mật (`Claude Security`) và kiểm thử hồi quy tích lũy (`Playwright`) quy định tại `AGENTS.md`.
