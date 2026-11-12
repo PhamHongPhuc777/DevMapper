@@ -128,4 +128,4 @@ Mọi coding agent (`Opus Architect` khi thiết kế/review và `Sonnet Executo
   3. `PLAN.md`: Kế hoạch nghiên cứu của `Opus Architect` và toàn bộ lịch sử các prompt qua mỗi đoạn chat bong bóng.
   4. `SETUP.md`: Cập nhật khi có thay đổi lớn về cấu hình hạ tầng (Load balancer, CDN, Redis Cache, DB Connection Pool) hoặc môi trường.
   - Mọi mục ghi đều dùng tiêu đề cấp 2: `## **YYYY-MM-DD** -- Tiêu đề ngắn gọn`, cách 1 dòng trống trước khi viết nội dung ở cột 0.
-- **Git Commit:** Tuyệt đối không thêm `"Co-Authored-By"` hay bất kỳ thông tin tác giả AI nào vào commit. Chủ dự án sẽ tự thực hiện push/pull thủ công.
+- **Git Commit:** Tuyệt đối không thêm `"Co-Authored-By"` hay bất kỳ thông tin tác giả AI nào vào commit. Phiên chạy local: Chủ dự án tự thực hiện push/pull thủ công, trừ khi chính Chủ dự án yêu cầu agent push. Phiên cloud: agent chỉ push lên nhánh làm việc (không bao giờ push trực tiếp lên `main`), Chủ dự án xem diff rồi tự merge.

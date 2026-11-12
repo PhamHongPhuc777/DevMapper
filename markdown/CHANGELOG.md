@@ -73,3 +73,7 @@ Thêm `contracts/README.md` mô tả mục đích, danh sách file và quy tắc
 ## **2026-11-12** -- Đổi tên gov_db thành users_db, governance-service thành user-service
 
 `gov_db` đổi thành `users_db` và `governance-service` thành `user-service` trong `PRD.md`, `SRS.md`, `ERD.md`, `PLAN.md`, vì schema chủ yếu chứa dữ liệu người dùng (người dùng, vai trò, quyền, yêu cầu truy cập) kèm audit log và thông báo gắn với `user_id`. Bảng `USER` là hồ sơ ứng dụng đồng bộ từ Keycloak; thông tin đăng nhập vẫn do Keycloak giữ. Các mục lịch sử trong `CHANGELOG.md` giữ tên cũ.
+
+## **2026-11-12** -- Quy tắc Git cho phiên cloud
+
+`AGENTS.md` Mục 4 (Git Commit): phiên local giữ nguyên (Chủ dự án tự push/pull, trừ khi yêu cầu agent push); phiên cloud chỉ push lên nhánh làm việc, không push thẳng `main`, Chủ dự án merge.
