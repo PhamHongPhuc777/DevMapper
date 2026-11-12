@@ -56,7 +56,7 @@ DevMapper là công cụ nền tảng kỹ thuật nội bộ (Internal Develope
 
 ### 2.2 Giả định và ràng buộc
 
-- Hệ thống Backend ứng dụng kiến trúc **Microservices** (gồm API Gateway, Scanner Service, Topology Service, AI-MCP Service, Quality-Gov Service) viết bằng Java (Spring Boot, MyBatis). Frontend phát triển bằng TypeScript/React.
+- Hệ thống Backend ứng dụng kiến trúc **Microservices** (gồm API Gateway, Scanner Service, Topology Service, AI-MCP Service, User Service) viết bằng Java (Spring Boot, MyBatis). Frontend phát triển bằng TypeScript/React.
 - Toàn bộ các thành phần hạ tầng gồm **PostgreSQL, Redis, Apache Kafka, Keycloak, và MinIO** được đóng gói container và tự host trực tiếp trên PC.
 - **NetBird** và **Traefik** là tùy chọn từ Phase 2, chỉ thêm khi cần truy cập từ xa; NetBird dùng **NetBird Cloud** (không cần VPS), MVP không phụ thuộc vào chúng.
 - Quá trình phát triển tuân thủ nghiêm ngặt quy trình điều phối đa tác tử (`Harness`), tra cứu tài liệu thời gian thực (`Context7`), rà soát bảo mật (`Claude Security`) và kiểm thử hồi quy tích lũy (`Playwright`) quy định tại `AGENTS.md`.
@@ -116,7 +116,7 @@ Claude Security là công cụ trong giai đoạn lập trình (xem `AGENTS.md` 
 
 ### NFR-3: Khả năng bảo trì và kiến trúc phân tầng
 
-- Backend áp dụng kiến trúc **Microservices** nghiêm ngặt. **PostgreSQL được chia thành 4 schemas riêng biệt** (`scanner_db`, `topology_db`, `ai_db`, `gov_db`). Nghiêm cấm `JOIN` xuyên schema và không tạo FOREIGN KEY xuyên schema (tham chiếu chéo như `group_id`, `snapshot_id`, `user_id` chỉ là khóa logic, service tự kiểm tra qua REST/gRPC/Kafka; xem phân bổ bảng trong `ERD.md`). Phân tầng nội bộ: `Controller -> Service -> Mapper -> Model`.
+- Backend áp dụng kiến trúc **Microservices** nghiêm ngặt. **PostgreSQL được chia thành 4 schemas riêng biệt** (`scanner_db`, `topology_db`, `ai_db`, `users_db`). Nghiêm cấm `JOIN` xuyên schema và không tạo FOREIGN KEY xuyên schema (tham chiếu chéo như `group_id`, `snapshot_id`, `user_id` chỉ là khóa logic, service tự kiểm tra qua REST/gRPC/Kafka; xem phân bổ bảng trong `ERD.md`). Phân tầng nội bộ: `Controller -> Service -> Mapper -> Model`.
 - Frontend tuân thủ chuỗi gọi đơn bước `Page -> Component -> Hook -> API` và quy tắc barrel `index.ts`, kiểm soát bằng `dependency-cruiser`.
 
 ### NFR-4: Khả năng triển khai và CI/CD tự phục hồi

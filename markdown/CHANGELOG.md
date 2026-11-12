@@ -65,3 +65,11 @@ Thêm `contracts/README.md` mô tả mục đích, danh sách file và quy tắc
 ## **2026-11-05** -- Loại chuỗi Claude Security khỏi sản phẩm
 
 `PRD.md`: bỏ mục 5.4 Bảo mật Claude Security (Đa mô hình AI thành 5.4), bỏ khỏi biểu đồ thống kê, MinIO và rủi ro dữ liệu; dòng công cụ ghi rõ là công cụ giai đoạn lập trình. `SRS.md`: FR-4 đánh dấu đã loại bỏ (giữ số hiệu), NFR-1 chỉ còn rà soát khi lập trình. `ERD.md`: bỏ bảng `SECURITY_REPORT`.
+
+## **2026-11-05** -- Đổi tên governance-service; thêm DESIGN_BRIEF.md
+
+`quality-gov-service` đổi thành `governance-service` (schema vẫn là `gov_db`) trong `PRD.md`, `SRS.md`, `ERD.md`, `PLAN.md`, vì dịch vụ chỉ còn quản trị truy cập (vai trò, quyền, yêu cầu truy cập, audit, thông báo). Thêm `markdown/DESIGN_BRIEF.md`: bản mô tả cho Claude Design đã bỏ màn hình test trace/báo cáo bảo mật và biểu đồ liên quan, thêm phân trang con trỏ kèm cửa sổ thời gian cho bảng snapshot.
+
+## **2026-11-12** -- Đổi tên gov_db thành users_db, governance-service thành user-service
+
+`gov_db` đổi thành `users_db` và `governance-service` thành `user-service` trong `PRD.md`, `SRS.md`, `ERD.md`, `PLAN.md`, vì schema chủ yếu chứa dữ liệu người dùng (người dùng, vai trò, quyền, yêu cầu truy cập) kèm audit log và thông báo gắn với `user_id`. Bảng `USER` là hồ sơ ứng dụng đồng bộ từ Keycloak; thông tin đăng nhập vẫn do Keycloak giữ. Các mục lịch sử trong `CHANGELOG.md` giữ tên cũ.

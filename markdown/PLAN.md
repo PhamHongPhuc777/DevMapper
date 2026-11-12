@@ -86,10 +86,10 @@ Trạng thái: D1, D4, D9, D11 và danh sách N/A (Mục 5) là **đề xuất, 
 
 | Schema | Bảng MVP | Ghi chú |
 | :--- | :--- | :--- |
-| `scanner_db` | `system_group`, `repository`, `scan_snapshot` | `SYSTEM_GROUP` chuyển từ `gov_db` sang đây vì FR-1 (đăng ký cụm polyrepo) thuộc scanner; FK `repository.group_id` nằm trong cùng schema |
+| `scanner_db` | `system_group`, `repository`, `scan_snapshot` | `SYSTEM_GROUP` chuyển từ `users_db` sang đây vì FR-1 (đăng ký cụm polyrepo) thuộc scanner; FK `repository.group_id` nằm trong cùng schema |
 | `topology_db` | `group_view`, `topology_snapshot`, `service_node`, `exposed_contract`, `message_topic`, `dependency_edge` | `group_view`, `topology_snapshot` là bản sao tối thiểu nhận từ sự kiện Kafka |
 | `ai_db` | (trống ở MVP) | `AI_IMPACT_SESSION` làm ở Phase 3 |
-| `gov_db` | (trống ở MVP) | Phase 2: `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION`, `TEST_TRACE_ARTIFACT`, `SECURITY_REPORT` và bảng mới `group_binding(group_id, keycloak_group_id, netbird_group_id)` thay cho 2 cột này trên `SYSTEM_GROUP` |
+| `users_db` | (trống ở MVP) | Phase 2: `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION`, `TEST_TRACE_ARTIFACT`, `SECURITY_REPORT` và bảng mới `group_binding(group_id, keycloak_group_id, netbird_group_id)` thay cho 2 cột này trên `SYSTEM_GROUP` |
 
 Cột chi tiết và chỉ mục:
 
@@ -190,7 +190,7 @@ Danh sách N/A (đề xuất, chờ Chủ dự án xác nhận): tiêu chí 5, 1
 - Ngữ nghĩa blast radius tầng ≥ 2 là xấp xỉ theo service (dương tính giả), đã ghi rõ trong hợp đồng tool.
 - Bảng `topology_db` tăng theo số lần quét vì giữ mọi snapshot (để làm Architecture Diff sau này); dọn dữ liệu (retention) để Phase 2.
 - Bảo mật MVP dựa vào token tĩnh trong env; lộ `DEVMAPPER_ADMIN_TOKEN` là lộ quyền cấp token. Giảm thiểu: mọi cổng chỉ bind `127.0.0.1`, không reverse proxy trong MVP (khi thêm Traefik ở Phase 2 cũng không mở admin API); thay bằng Keycloak ở Phase 2.
-- Ghi audit (FR-6) cho thao tác admin chưa có vì `gov_db` hoãn; Phase 2 phát sự kiện audit từ scanner sang `quality-gov-service`.
+- Ghi audit (FR-6) cho thao tác admin chưa có vì `users_db` hoãn; Phase 2 phát sự kiện audit từ scanner sang `user-service`.
 
 ### 8. Câu hỏi mở cần Chủ dự án xác nhận
 
@@ -202,7 +202,7 @@ Danh sách N/A (đề xuất, chờ Chủ dự án xác nhận): tiêu chí 5, 1
 
 Chưa trả lời (đề xuất, chờ Chủ dự án xác nhận):
 
-2. Đồng ý chuyển `SYSTEM_GROUP` sang `scanner_db`, tách `keycloak_group_id`/`netbird_group_id` sang `gov_db.group_binding` ở Phase 2 (D1)?
+2. Đồng ý chuyển `SYSTEM_GROUP` sang `scanner_db`, tách `keycloak_group_id`/`netbird_group_id` sang `users_db.group_binding` ở Phase 2 (D1)?
 3. Đồng ý scanner CLI MVP chỉ quét Java/Spring bằng JavaParser, hoãn Tree-sitter/Axios/gRPC/OpenAPI (D4)?
 4. Đồng ý hoãn API Gateway sang Phase 2 (D9)?
 5. Đồng ý Java 21 + Spring Boot 4.1.x (D11)?
@@ -285,8 +285,8 @@ Sửa tại chỗ mục "Kế hoạch MVP chính thức" theo quyết định h�
 
 ## **2026-11-04** -- Playwright chỉ là công cụ phát triển (cần chỉnh kế hoạch khi duyệt lại)
 
-Chủ dự án chốt: Playwright và Trace Viewer chỉ dùng khi lập trình client để tìm lỗi UI, không phải tính năng cho người dùng ứng dụng. Đã sửa `SRS.md` (NFR-5), `PRD.md`, `ERD.md` (bỏ bảng `TEST_TRACE_ARTIFACT`), `AGENTS.md` (`trace: 'retain-on-failure'`). `Opus Architect` cần bỏ `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `gov_db` Phase 2 trong D1 khi duyệt lại kế hoạch.
+Chủ dự án chốt: Playwright và Trace Viewer chỉ dùng khi lập trình client để tìm lỗi UI, không phải tính năng cho người dùng ứng dụng. Đã sửa `SRS.md` (NFR-5), `PRD.md`, `ERD.md` (bỏ bảng `TEST_TRACE_ARTIFACT`), `AGENTS.md` (`trace: 'retain-on-failure'`). `Opus Architect` cần bỏ `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `users_db` Phase 2 trong D1 khi duyệt lại kế hoạch.
 
 ## **2026-11-05** -- Claude Security chỉ là công cụ lập trình (cần chỉnh kế hoạch khi duyệt lại)
 
-Chủ dự án chốt: Claude Security chỉ dùng ở giai đoạn lập trình, ứng dụng không lưu hay hiển thị báo cáo bảo mật. Đã sửa `PRD.md` (bỏ mục 5.4 cũ, đánh số lại), `SRS.md` (FR-4 đã loại bỏ, giữ số hiệu), `ERD.md` (bỏ bảng `SECURITY_REPORT`). `Opus Architect` cần bỏ `SECURITY_REPORT` cùng `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `gov_db` Phase 2 trong D1, và không dành chỗ trong MinIO cho báo cáo bảo mật khi duyệt lại kế hoạch.
+Chủ dự án chốt: Claude Security chỉ dùng ở giai đoạn lập trình, ứng dụng không lưu hay hiển thị báo cáo bảo mật. Đã sửa `PRD.md` (bỏ mục 5.4 cũ, đánh số lại), `SRS.md` (FR-4 đã loại bỏ, giữ số hiệu), `ERD.md` (bỏ bảng `SECURITY_REPORT`). `Opus Architect` cần bỏ `SECURITY_REPORT` cùng `TEST_TRACE_ARTIFACT` khỏi danh sách bảng `users_db` Phase 2 trong D1, và không dành chỗ trong MinIO cho báo cáo bảo mật khi duyệt lại kế hoạch.

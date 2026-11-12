@@ -172,7 +172,7 @@ erDiagram
 | `scanner_db` (`scanner-service`) | `REPOSITORY`, `SCAN_SNAPSHOT` |
 | `topology_db` (`topology-service`) | `SERVICE_NODE`, `EXPOSED_CONTRACT`, `MESSAGE_TOPIC`, `DEPENDENCY_EDGE` |
 | `ai_db` (`ai-mcp-service`) | `AI_IMPACT_SESSION` |
-| `gov_db` (`quality-gov-service`) | `SYSTEM_GROUP`, `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION` |
+| `users_db` (`user-service`) | `SYSTEM_GROUP`, `ROLE`, `PERMISSION`, `ROLE_PERMISSION`, `USER`, `ACCESS_REQUEST`, `AUDIT_LOG`, `NOTIFICATION` |
 
 **Quy tắc tham chiếu chéo:** các cột `group_id`, `snapshot_id`, `user_id`, `actor_id` trỏ sang schema khác chỉ là khóa logic (không tạo `FOREIGN KEY`, không `JOIN`); service sở hữu tự kiểm tra tồn tại qua REST/gRPC/Kafka. Chỉ các quan hệ nằm trong cùng schema mới có ràng buộc FK ở mức DB.
 
