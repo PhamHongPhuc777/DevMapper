@@ -308,3 +308,23 @@ Hướng đề xuất đã thảo luận (chưa chốt):
 Việc cần kiểm chứng trước khi làm: (1) `send_message` có đánh thức phiên đang rảnh không hay chỉ xếp hàng; (2) phiên có tìm được phiên khác theo vai trò không (bộ lọc tag của `list_sessions` có thể chỉ dành cho người gọi OAuth), nếu không thì phải truyền ID vai trò lúc tạo phiên.
 
 Câu hỏi cần Chủ dự án quyết định khi gọi lại: danh sách vai trò tách thành phiên riêng (có Reviewer không); Planner có được tự sửa bản nháp khi nhận CR không (đề xuất: có, giữ nguyên cổng phê duyệt); áp dụng cho mọi repo hay chỉ DevMapper trước (đề xuất: DevMapper trước).
+
+## **2026-11-12** -- Phản hồi của Chủ dự án: trả lời câu 2–6 (kế hoạch CHƯA phê duyệt toàn bộ)
+
+Chủ dự án đã trả lời các câu hỏi mở còn lại ở Mục 8:
+
+- Câu 2 (D1): đồng ý chuyển `SYSTEM_GROUP` sang `scanner_db`; `keycloak_group_id`/`netbird_group_id` tách sang `users_db.group_binding` ở Phase 2.
+- Câu 3 (D4): đồng ý scanner CLI MVP chỉ quét Java/Spring bằng JavaParser; hoãn Tree-sitter, Axios, gRPC, OpenAPI/AsyncAPI sang Phase 2.
+- Câu 4 (D9): đồng ý hoãn API Gateway sang Phase 2 cùng Keycloak/JWT.
+- Câu 5 (D11): đồng ý Java 21 LTS và Spring Boot 4.1.x; số phiên bản thư viện cụ thể vẫn do `Sonnet Executor` M0 kiểm tra trên Maven Central.
+- Câu 6: duyệt danh sách N/A đúng như Mục 5: tiêu chí 5, 11–16 và 18 là N/A (lý do: chỉ truy cập qua `localhost`, MVP chưa có frontend); tiêu chí 2, 4, 10 áp dụng một phần. `Opus Architect` coi các mục N/A này là đã duyệt, không bị `[REJECTED]` (AGENTS.md Mục 2.3).
+
+Hệ quả: D1, D4, D9, D11 và danh sách N/A không còn "chờ xác nhận". Các nhãn "đề xuất, chờ Chủ dự án xác nhận" trong thân kế hoạch (Mục 3, Mục 5, Mục 8) sẽ được `Opus Architect` cập nhật tại chỗ ở lượt duyệt lại kế hoạch, chưa sửa ở đây.
+
+Vẫn còn mở, kế hoạch CHƯA được phê duyệt để viết code:
+
+- Máy chủ chạy ứng dụng: laptop hay desktop, và cách đưa code từ phiên cloud sang máy chủ (kéo và chạy thủ công, Remote Control, hoặc runner tự host). D13 phụ thuộc quyết định này; M0 viết được trên cloud nhưng test Testcontainers và smoke test cần máy chủ có Docker.
+- Lượt duyệt lại kế hoạch của `Opus Architect` cho các mục đã ghi nhận nhưng chưa sửa: bỏ `TEST_TRACE_ARTIFACT` và `SECURITY_REPORT` khỏi danh sách bảng `users_db` Phase 2 ở D1 (và không dành chỗ MinIO cho báo cáo bảo mật); ghi kỹ thuật phân trang theo từng kiểu dữ liệu theo tiêu chí 10 mới; thêm ghi chú Anime.js cho module frontend M5.
+- Phê duyệt chính thức của Chủ dự án tại Cổng Xác nhận.
+
+Ghi chú môi trường (kiểm tra ngày 2026-11-12): container cloud có Java 21.0.12, Gradle 8.14.3, Docker Compose CLI v5.6.1, 4 CPU, 15 GB RAM, nhưng KHÔNG có Docker daemon, nên compose stack và Testcontainers chưa chạy được trong phiên cloud. Laptop chưa chia sẻ thư mục nào qua Remote Control.
